@@ -15,6 +15,8 @@ Visuel : `design/source/pipeline_visuel_vagues.png` (fourni par Studio Wiga, vag
 
 Les formes Sine / Triangle / Ramp / Square sont des formes de **hauteur** (le temps de retard en est l'intégrale) : Square donne de vrais trilles, Ramp un « ping » de sonar. Random passe du « disque voilé » (sinus) aux glissandos aléatoires quand Depth monte. Seul Env P mélange le signal sec, comme sur la pédale.
 
+Taille de fenêtre : clic droit > *Plugin size* : 60 % (taille minimale, impossible de réduire en dessous, proportions bloquées) / 75 % / 100 %, « (default) » sur la taille par défaut choisie ; *Default size (new windows)* choisit la taille à laquelle s'ouvrent les nouvelles fenêtres du plugin (réglage commun à toutes les instances) et redimensionne aussitôt la fenêtre courante.
+
 ## MIDI
 
 MIDI Learn sur toutes les commandes (clic droit), sauvegardé avec le projet. Par défaut : Rate CC 20, Depth CC 21, Mode CC 22 (8 zones), Tempo Sync CC 23, Footswitch CC 24 ; 14 bits sur CC 52-53 ; Program Change 1-15 = presets d'usine. Pédales d'expression : rampe + lissage 2 pôles, course apprise automatiquement, zones mortes.
@@ -41,6 +43,7 @@ Le workflow GitHub `build.yml` produit les artefacts `Pipeline-VST3-Windows` et 
 
 ## Historique
 
+- **1.5.0** : clic droit > Plugin size > Default size (new windows) : taille par défaut des nouvelles fenêtres au choix, comme dans Octopus.
 - **1.4.3** : potards RATE / DEPTH et bloc MODE remontés, titres RATE / DEPTH / MODE éloignés des potards, logo Studio Wiga du kit (net, plus de lettres grisées) remonté au-dessus du filet, ombres fantômes des anciennes étiquettes effacées.
 - **1.4.2** : sélecteur MODE à crans comme Ring Think : le repère saute d'une position à l'autre, sans glissement, butées en fin de course.
 - **1.4.1** : sélecteur MODE à crans (résistance, bascule avec léger rebond, butées en fin de course), étiquettes des modes agrandies et éteintes quand l'effet est coupé, nom des presets agrandi (le plus long tient entier), zone assombrie du footswitch agrandie.

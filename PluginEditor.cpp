@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "BinaryData.h"
 #include "Layout.h"
+#include "WigaWindowSize.h"
 
 using namespace juce;
 
@@ -252,6 +253,8 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
         cons->setFixedAspectRatio ((double) baseW / (double) baseH);
     setOpaque (true);
     setSize (defaultW, defaultH);
+    // taille des nouvelles fenetres : celle choisie dans le menu « Default size (new windows) »
+    setScaledHeight (sizeHeight (WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes)));
     rebuildCaches();
     startTimerHz (30);
 }
@@ -259,6 +262,12 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
 PipelineAudioProcessorEditor::~PipelineAudioProcessorEditor() { stopTimer(); setLookAndFeel (nullptr); }
 
 //==============================================================================
+int PipelineAudioProcessorEditor::sizeHeight (int idx)
+{
+    const int h[numSizes] = { (int) defaultH, roundToInt (baseH * 0.75f), (int) baseH };
+    return h[jlimit (0, numSizes - 1, idx)];
+}
+
 void PipelineAudioProcessorEditor::setScaledHeight (int h)
 {
     h = jmax ((int) defaultH, h);
@@ -933,10 +942,20 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
 {
     PopupMenu menu, sizes;
     addMidiMenu (menu, learnIdx);
-    sizes.addItem (1, "60 % (default)", true, getHeight() == defaultH);
-    sizes.addItem (2, "75 %",  true, getHeight() == roundToInt (baseH * 0.75f));
-    sizes.addItem (3, "100 %", true, getHeight() == baseH);
-    menu.addSubMenu ("Window size", sizes);
+    {
+        // Plugin size : taille de cette fenetre + taille par defaut des nouvelles fenetres (comme Octopus)
+        const char* names[numSizes] = { "60 %", "75 %", "100 %" };
+        const int def = WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes);
+        PopupMenu defSizes;
+        for (int i = 0; i < numSizes; ++i)
+        {
+            sizes.addItem (1 + i, String (names[i]) + (i == def ? "  (default)" : ""), true, std::abs (getHeight() - sizeHeight (i)) <= 2);
+            defSizes.addItem (20 + i, names[i], true, i == def);
+        }
+        sizes.addSeparator();
+        sizes.addSubMenu ("Default size (new windows)", defSizes);
+        menu.addSubMenu ("Plugin size", sizes);
+    }
     menu.addSeparator();
 
     PopupMenu factory;
@@ -990,9 +1009,12 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
             if (safe == nullptr || r == 0) return;
             auto& ed = *safe;
             auto& pr = ed.proc;
-            if      (r == 1) ed.setScaledHeight (defaultH);
-            else if (r == 2) ed.setScaledHeight (roundToInt (baseH * 0.75f));
-            else if (r == 3) ed.setScaledHeight (baseH);
+            if      (r >= 1 && r < 1 + numSizes) ed.setScaledHeight (ed.sizeHeight (r - 1));
+            else if (r >= 20 && r < 20 + numSizes)
+            {
+                WigaWindowSize::setDefaultIndex (JucePlugin_Name, r - 20);   // toutes les nouvelles fenetres de ce plugin
+                ed.setScaledHeight (ed.sizeHeight (r - 20));                // et cette fenetre tout de suite
+            }
             else if (r == 40) { pr.setParamValue ("sync", pr.raw ("sync") > 0.5f ? 0.0f : 1.0f); }
             else if (r == 41) pr.setParamValue ("midiFsMode", 0.0f);
             else if (r == 42) pr.setParamValue ("midiFsMode", 1.0f);
