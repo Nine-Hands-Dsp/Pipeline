@@ -32,7 +32,7 @@ JUCE 8.0.15 ; rendu logiciel forcé sous Windows (réappliqué à chaque nouvell
 - `tools/make_background.py` : fond tiré du visuel (repères effacés, éléments déplacés), calque de la LED, `Layout.h`.
 - `tools/render/` : compile la vraie fenêtre sous Linux et exporte les captures ; `tools/manual.py` : notice PDF.
 - `tests/test_dsp.cpp` : banc d'essai du moteur (hauteur mesurée par mode, crêtes, bypass exact).
-- `docs/Pipeline_Manual_EN-FR_v1.4.3.pdf` : notice bilingue.
+- `docs/Pipeline_Manual_EN-FR_v1.5.1.pdf` : notice bilingue.
 
 ## Compilation
 

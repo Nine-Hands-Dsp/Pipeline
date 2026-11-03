@@ -1,5 +1,7 @@
 # PIPELINE (Studio Wiga) - notice PDF bilingue (anglais puis francais), illustree avec le rendu reel du plugin.
-# Usage : python3 tools/manual.py <dossier des captures (tools/render)> <fichier PDF de sortie>
+# Usage : python3 tools/manual.py [<dossier des captures (tools/render)>] <fichier PDF de sortie>
+#   avec captures : recompose les images et les copie dans tools/manual_assets/ ;
+#   sans captures : reprend les images composees de tools/manual_assets/ (extraites de la notice precedente).
 import os, sys, json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -14,9 +16,9 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHOTS = sys.argv[1]
-OUT = sys.argv[2]
-VERSION = "1.4.3"
+SHOTS = sys.argv[1] if len(sys.argv) > 2 else None
+OUT = sys.argv[-1]
+VERSION = "1.5.1"
 TMP = os.path.dirname(os.path.abspath(OUT))
 FONTS = os.path.join(ROOT, "assets", "fonts")
 
@@ -30,63 +32,71 @@ ACC_RGB = (31, 134, 200)
 
 LAY = json.load(open(os.path.join(ROOT, "tools", "layout.json")))
 
-def shot(name): return Image.open(os.path.join(SHOTS, name)).convert("RGB")
-K = shot("pipeline_full.png").height / 958.0          # px par unite 760 x 958
+ASSETS = os.path.join(ROOT, "tools", "manual_assets")
+NAMES = ["pipeline_annotated.png", "pipeline_knobs.png", "pipeline_mode.png", "pipeline_fs.png", "pipeline_disp.png", "pipeline_disp2.png", "pipeline_cover_cutout.png"]
+if SHOTS:
+    def shot(name): return Image.open(os.path.join(SHOTS, name)).convert("RGB")
+    K = shot("pipeline_full.png").height / 958.0          # px par unite 760 x 958
 
-# ---------- capture annotee ----------
-src = shot("pipeline_full.png")
-ann = src.copy(); dr = ImageDraw.Draw(ann)
-fnt = ImageFont.truetype(os.path.join(FONTS, "Poppins-Bold.ttf"), 30)
-marks = [  # numero, x, y (unites)
-    (1, 164, 124), (2, 600, 124), (3, 470, 300), (4, 612, 701), (5, 612, 751),
-    (6, 420, 70), (7, 462, 860), (8, 72, 520), (9, 690, 520)]
-for n, x, y in marks:
-    cx, cy, r = x * K, y * K, 24
-    dr.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 255, 255), outline=ACC_RGB, width=5)
-    dr.text((cx, cy + 1), str(n), font=fnt, fill=(27, 28, 32), anchor="mm")
-annotated = os.path.join(TMP, "pipeline_annotated.png"); ann.save(annotated)
+    # ---------- capture annotee ----------
+    src = shot("pipeline_full.png")
+    ann = src.copy(); dr = ImageDraw.Draw(ann)
+    fnt = ImageFont.truetype(os.path.join(FONTS, "Poppins-Bold.ttf"), 30)
+    marks = [  # numero, x, y (unites)
+        (1, 164, 124), (2, 600, 124), (3, 470, 300), (4, 612, 701), (5, 612, 751),
+        (6, 420, 70), (7, 462, 860), (8, 72, 520), (9, 690, 520)]
+    for n, x, y in marks:
+        cx, cy, r = x * K, y * K, 24
+        dr.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 255, 255), outline=ACC_RGB, width=5)
+        dr.text((cx, cy + 1), str(n), font=fnt, fill=(27, 28, 32), anchor="mm")
+    annotated = os.path.join(TMP, "pipeline_annotated.png"); ann.save(annotated)
 
-def crop_u(img_, box):
-    k = img_.height / 958.0
-    return img_.crop(tuple(int(v * k) for v in box)).resize((int((box[2] - box[0]) * 2), int((box[3] - box[1]) * 2)), Image.LANCZOS)
-def strip(images, path, gap=16):
-    h = max(i.height for i in images)
-    s = Image.new("RGB", (sum(i.width for i in images) + gap * (len(images) - 1), h), (255, 255, 255))
-    x = 0
-    for i in images: s.paste(i, (x, 0)); x += i.width + gap
-    s.save(path); return path
+    def crop_u(img_, box):
+        k = img_.height / 958.0
+        return img_.crop(tuple(int(v * k) for v in box)).resize((int((box[2] - box[0]) * 2), int((box[3] - box[1]) * 2)), Image.LANCZOS)
+    def strip(images, path, gap=16):
+        h = max(i.height for i in images)
+        s = Image.new("RGB", (sum(i.width for i in images) + gap * (len(images) - 1), h), (255, 255, 255))
+        x = 0
+        for i in images: s.paste(i, (x, 0)); x += i.width + gap
+        s.save(path); return path
 
-knobs_img = strip([crop_u(shot("pipeline_full.png"), (150, 90, 610, 290))], os.path.join(TMP, "pipeline_knobs.png"))
-mode_img = strip([crop_u(shot("pipeline_full.png"), (214, 266, 548, 490)), crop_u(shot("pipeline_envp.png"), (214, 266, 548, 490))],
-                 os.path.join(TMP, "pipeline_mode.png"))
-fs_img = strip([crop_u(shot("pipeline_bypass.png"), (316, 778, 446, 904)), crop_u(shot("pipeline_full.png"), (316, 778, 446, 904)),
-                crop_u(shot("pipeline_pressed.png"), (316, 778, 446, 904))], os.path.join(TMP, "pipeline_fs.png"))
-disp_img = strip([crop_u(shot(p), (170, 660, 592, 784)) for p in ("pipeline_full.png", "pipeline_envp.png")], os.path.join(TMP, "pipeline_disp.png"), gap=10)
-disp2_img = strip([crop_u(shot(p), (170, 660, 592, 784)) for p in ("pipeline_status.png", "pipeline_sync.png")], os.path.join(TMP, "pipeline_disp2.png"), gap=10)
+    knobs_img = strip([crop_u(shot("pipeline_full.png"), (150, 90, 610, 290))], os.path.join(TMP, "pipeline_knobs.png"))
+    mode_img = strip([crop_u(shot("pipeline_full.png"), (214, 266, 548, 490)), crop_u(shot("pipeline_envp.png"), (214, 266, 548, 490))],
+                     os.path.join(TMP, "pipeline_mode.png"))
+    fs_img = strip([crop_u(shot("pipeline_bypass.png"), (316, 778, 446, 904)), crop_u(shot("pipeline_full.png"), (316, 778, 446, 904)),
+                    crop_u(shot("pipeline_pressed.png"), (316, 778, 446, 904))], os.path.join(TMP, "pipeline_fs.png"))
+    disp_img = strip([crop_u(shot(p), (170, 660, 592, 784)) for p in ("pipeline_full.png", "pipeline_envp.png")], os.path.join(TMP, "pipeline_disp.png"), gap=10)
+    disp2_img = strip([crop_u(shot(p), (170, 660, 592, 784)) for p in ("pipeline_status.png", "pipeline_sync.png")], os.path.join(TMP, "pipeline_disp2.png"), gap=10)
 
-# ---------- couverture : pedale detouree, reflet au sol, halo bleu tres doux ----------
-cov = shot("pipeline_full.png")
-msk = Image.open(os.path.join(ROOT, "tools", "pedal_mask.png")).convert("L").resize(cov.size, Image.LANCZOS)
-cut = Image.new("RGBA", cov.size, (0, 0, 0, 0)); cut.paste(cov, (0, 0), msk)
-cut = cut.crop(cut.getbbox())
-cw, ch = cut.size
-pad = int(cw * 0.16)
-canvas = Image.new("RGBA", (cw + 2 * pad, int(ch * 1.30) + pad), (0, 0, 0, 255))
-yy, xx = np.mgrid[0:canvas.height, 0:canvas.width].astype(np.float64)
-gcx, gcy = canvas.width / 2, pad + ch * 0.42
-glow = np.exp(-(((xx - gcx) / (cw * 0.62)) ** 2 + ((yy - gcy) / (ch * 0.48)) ** 2)) * 30
-edge = np.clip(np.minimum.reduce([xx, canvas.width - 1 - xx, yy, canvas.height - 1 - yy]) / (pad * 0.9), 0, 1)
-glow *= edge ** 2
-halo = np.dstack([glow * 0.20, glow * 0.62, glow * 1.0, np.full_like(glow, 255)]).astype(np.uint8)
-canvas = Image.alpha_composite(canvas, Image.fromarray(halo, "RGBA"))
-refl = cut.transpose(Image.FLIP_TOP_BOTTOM)
-ra = np.array(refl).astype(np.float64)
-fade = np.clip(1 - np.arange(refl.height) / (refl.height * 0.22), 0, 1) ** 1.6 * 0.22
-ra[..., 3] *= fade[:, None]
-canvas.alpha_composite(Image.fromarray(ra.astype(np.uint8), "RGBA"), (pad, pad + ch + 6))
-canvas.alpha_composite(cut, (pad, pad))
-canvas = canvas.crop((0, 0, canvas.width, pad + int(ch * 1.20)))
-cover = os.path.join(TMP, "pipeline_cover_cutout.png"); canvas.convert("RGB").save(cover)
+    # ---------- couverture : pedale detouree, reflet au sol, halo bleu tres doux ----------
+    cov = shot("pipeline_full.png")
+    msk = Image.open(os.path.join(ROOT, "tools", "pedal_mask.png")).convert("L").resize(cov.size, Image.LANCZOS)
+    cut = Image.new("RGBA", cov.size, (0, 0, 0, 0)); cut.paste(cov, (0, 0), msk)
+    cut = cut.crop(cut.getbbox())
+    cw, ch = cut.size
+    pad = int(cw * 0.16)
+    canvas = Image.new("RGBA", (cw + 2 * pad, int(ch * 1.30) + pad), (0, 0, 0, 255))
+    yy, xx = np.mgrid[0:canvas.height, 0:canvas.width].astype(np.float64)
+    gcx, gcy = canvas.width / 2, pad + ch * 0.42
+    glow = np.exp(-(((xx - gcx) / (cw * 0.62)) ** 2 + ((yy - gcy) / (ch * 0.48)) ** 2)) * 30
+    edge = np.clip(np.minimum.reduce([xx, canvas.width - 1 - xx, yy, canvas.height - 1 - yy]) / (pad * 0.9), 0, 1)
+    glow *= edge ** 2
+    halo = np.dstack([glow * 0.20, glow * 0.62, glow * 1.0, np.full_like(glow, 255)]).astype(np.uint8)
+    canvas = Image.alpha_composite(canvas, Image.fromarray(halo, "RGBA"))
+    refl = cut.transpose(Image.FLIP_TOP_BOTTOM)
+    ra = np.array(refl).astype(np.float64)
+    fade = np.clip(1 - np.arange(refl.height) / (refl.height * 0.22), 0, 1) ** 1.6 * 0.22
+    ra[..., 3] *= fade[:, None]
+    canvas.alpha_composite(Image.fromarray(ra.astype(np.uint8), "RGBA"), (pad, pad + ch + 6))
+    canvas.alpha_composite(cut, (pad, pad))
+    canvas = canvas.crop((0, 0, canvas.width, pad + int(ch * 1.20)))
+    cover = os.path.join(TMP, "pipeline_cover_cutout.png"); canvas.convert("RGB").save(cover)
+    import shutil
+    os.makedirs(ASSETS, exist_ok=True)
+    for n in NAMES: shutil.copy(os.path.join(TMP, n), os.path.join(ASSETS, n))
+else:
+    annotated, knobs_img, mode_img, fs_img, disp_img, disp2_img, cover = [os.path.join(ASSETS, n) for n in NAMES]
 
 def img(path, width):
     im = Image.open(path); h = width * im.height / im.width
@@ -215,17 +225,18 @@ T["en"] = dict(
  fs_cap="Footswitch: bypass (LED off), effect on, pressed (button darkened).",
  midi_t="7. MIDI",
  midi_txt=["<b>MIDI Learn on every control</b>: right-click RATE, DEPTH, MODE or the footswitch. The top of the menu shows <b>MIDI Learn: &lt;Name&gt; (CC n / none)</b> with the current assignment, <b>Clear MIDI: &lt;Name&gt;</b> and, while a learn is waiting, <b>Cancel MIDI learn</b>. Then move a pedal or knob or press a footswitch on your controller: the display shows <b>MIDI LEARN: move a control for &lt;Name&gt;</b>, then <b>&lt;Name&gt; = CC n</b> for 2 seconds.",
-           "Every right-click menu also has the <b>MIDI map</b> submenu: <b>Learn</b> for each of the 5 controls (Tempo Sync included), <b>Cancel MIDI learn</b> and <b>Reset MIDI to defaults (CC 20-24)</b>. A CC number can only drive one control. Learn accepts CC 0 to 119; Pipeline listens on all channels. <b>Assignments are saved with the project.</b>"],
- midi_hdr=["Control", "Default CC", "Type"],
- midi=[["Rate", "CC 20", "Continuous 0-127; 14-bit with CC 52"], ["Depth", "CC 21", "Continuous 0-127; 14-bit with CC 53"],
-       ["Mode", "CC 22", "8-position selector: 0-127 split into 8 equal zones (Sine to Env P)"],
-       ["Tempo Sync", "CC 23", "Switch: 64 and above = ON"],
-       ["Footswitch", "CC 24", "Each press toggles on / off (default, for momentary footswitches such as the M-Vave Chocolate) or latching (127 = on / 0 = off)"]],
+           "Every right-click menu also has the <b>MIDI map</b> submenu: <b>Learn</b> for each of the 5 controls (Tempo Sync included), <b>Cancel MIDI learn</b> (while a learn is waiting) and <b>Clear all MIDI assignments</b>, plus a reminder of the map. A CC number can only drive one control. Learn accepts CC 0 to 119; Pipeline listens on all channels. <b>Assignments are saved with the project.</b>",
+           "<b>No CC is assigned by default</b>: Pipeline does not react to any CC until you have learned one. Older projects that still had the former factory map open with no assignment; a project in which you had changed at least one assignment keeps its assignments."],
+ midi_hdr=["Control", "Type"],
+ midi=[["Rate", "Continuous 0-127; 14-bit with CC n+32 if learned on CC n = 0-31"], ["Depth", "Continuous 0-127; 14-bit with CC n+32 if learned on CC n = 0-31"],
+       ["Mode", "8-position selector: 0-127 split into 8 equal zones (Sine to Env P)"],
+       ["Tempo Sync", "Switch: 64 and above = ON"],
+       ["Footswitch", "Each press toggles on / off (default, for momentary footswitches such as the M-Vave Chocolate) or latching (127 = on / 0 = off)"]],
  midi2=["<b>MIDI footswitch mode</b>: right-click &gt; <b>Settings</b> &gt; <b>MIDI footswitch: each press toggles on / off</b> (default: one press = on, next press = off, no need to hold) or <b>MIDI footswitch latching (127 = on / 0 = off)</b> for latching switches.",
         "<b>Expression pedals</b> on RATE or DEPTH are smoothed (ramp between two messages, then a 2-pole smoothing), 14-bit CC accepted, pedal travel learnt automatically (0 and 100 % reached even if the pedal only sends 2-116) and small dead zones at both ends. A pedal on RATE in Env P becomes a real-time bend range control.",
         "<b>Program Change</b> 1-15 loads the factory presets."],
  win_t="8. Window and display",
- win=["Right-click &gt; <b>Window size</b>: <b>60 % (default)</b>, <b>75 %</b>, <b>100 %</b>. The window opens at the same default size as the other Studio Wiga single pedals and can never be made smaller; drag the corner to enlarge it (proportions locked).",
+ win=["Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b>, <b>100 %</b> resizes this window; <b>(default)</b> marks the default size you have chosen. At the bottom of this submenu, <b>Default size (new windows)</b> chooses the size at which every new window of Pipeline opens (one setting shared by all instances, saved on the computer); the open window also takes this size at once. At first the default size is 60 %, the same as the other Studio Wiga single pedals. The size is not saved with the project: each time it is opened, the window comes back at the default size. It can never be made smaller than 60 %; drag the corner to enlarge it (proportions locked).",
       "The left part of the display shows the value of the control you just moved for 2.5 s, with its meaning in the current mode (for example <b>RATE (BEND RANGE)</b> in Env P, <b>DEPTH (MIX) 50 / 50</b>). The rest of the time it shows the mode, the LFO speed and the live pitch deviation in cents (the bend depth in Env P).", "<b>Scope</b>: the right part of the display draws the pitch modulation as it happens (animated, 30 frames per second), scrolling from right to left: the right edge is what you hear now. RATE changes the number of cycles, DEPTH the height, MODE the shape (sine, triangle, sonar ramp, square, random). In the envelope modes it follows your playing: the wave swells (Env D), speeds up (Env R) or dips like a tremolo arm (Env P) with each attack, and stays flat while nothing is played. In bypass the trace goes flat and dim."],
  disp_cap="Display: live information and scope (Sine, Env P), then the value of the control being moved (Rate in Hz, Rate in tempo sync).",
  pre_t="9. Presets",
@@ -243,8 +254,8 @@ T["en"] = dict(
        ["Delay", "0.6 ms minimum plus half the modulation swing (up to about 11 ms at full DEPTH and slow RATE); no latency is reported to the host, as with a hardware vibrato (the original measured about 52 ms)"],
        ["Pitch range", "Up to about +4 / -6 semitones (slew limiter: never reversed playback)"],
        ["Sample rates", "44.1 to 192 kHz"], ["Version", VERSION],
-       ["Window", "60 % (default, also the minimum size), 75 %, 100 %; anti-freeze v2 on Windows (software rendering, display caches rebuilt by a timer, redraw watchdog, no call to the host from the audio thread)"],
-       ["MIDI", "MIDI Learn on 5 controls (saved with the project), defaults CC 20-24 (14-bit on CC 52-53), Program Change 1-15, all channels"]],
+       ["Window", "Plugin size 60 % (minimum), 75 %, 100 %, default size of new windows to choose (60 % at first); anti-freeze v2 on Windows (software rendering, display caches rebuilt by a timer, redraw watchdog, no call to the host from the audio thread)"],
+       ["MIDI", "MIDI Learn on 5 controls (saved with the project), no CC assigned by default (14-bit on CC n+32 for Rate and Depth), Program Change 1-15, all channels"]],
 )
 T["fr"] = dict(
  lang="FRANÇAIS", sub="Vibrato de hauteur à 8 modes", ver="Notice d'utilisation · version " + VERSION,
@@ -291,17 +302,18 @@ T["fr"] = dict(
  fs_cap="Footswitch : bypass (LED éteinte), effet en marche, enfoncé (bouton assombri).",
  midi_t="7. MIDI",
  midi_txt=["<b>MIDI Learn sur toutes les commandes</b> : clic droit sur RATE, DEPTH, MODE ou le footswitch. Le haut du menu affiche <b>MIDI Learn: &lt;Nom&gt; (CC n / none)</b> avec l'assignation actuelle, <b>Clear MIDI: &lt;Nom&gt;</b> et, tant qu'un apprentissage est en attente, <b>Cancel MIDI learn</b>. Bougez ensuite une pédale, un bouton ou appuyez sur un footswitch de votre contrôleur : l'écran affiche <b>MIDI LEARN: move a control for &lt;Nom&gt;</b>, puis <b>&lt;Nom&gt; = CC n</b> pendant 2 secondes.",
-           "Chaque menu clic droit contient aussi le sous-menu <b>MIDI map</b> : <b>Learn</b> pour chacune des 5 commandes (Tempo Sync compris), <b>Cancel MIDI learn</b> et <b>Reset MIDI to defaults (CC 20-24)</b>. Un numéro de CC ne pilote qu'une seule commande. L'apprentissage accepte les CC 0 à 119 ; Pipeline écoute tous les canaux. <b>Les assignations sont sauvegardées avec le projet.</b>"],
- midi_hdr=["Commande", "CC par défaut", "Type"],
- midi=[["Rate", "CC 20", "Continu 0-127 ; 14 bits avec CC 52"], ["Depth", "CC 21", "Continu 0-127 ; 14 bits avec CC 53"],
-       ["Mode", "CC 22", "Sélecteur 8 positions : 0-127 découpé en 8 zones égales (Sine à Env P)"],
-       ["Tempo Sync", "CC 23", "Bascule : 64 et plus = ON"],
-       ["Footswitch", "CC 24", "Chaque appui bascule marche / arrêt (par défaut, pour les footswitchs momentanés comme la M-Vave Chocolate) ou à accrochage (127 = on / 0 = off)"]],
+           "Chaque menu clic droit contient aussi le sous-menu <b>MIDI map</b> : <b>Learn</b> pour chacune des 5 commandes (Tempo Sync compris), <b>Cancel MIDI learn</b> (tant qu'un apprentissage est en attente) et <b>Clear all MIDI assignments</b>, plus un rappel de la table. Un numéro de CC ne pilote qu'une seule commande. L'apprentissage accepte les CC 0 à 119 ; Pipeline écoute tous les canaux. <b>Les assignations sont sauvegardées avec le projet.</b>",
+           "<b>Aucun CC n'est assigné par défaut</b> : Pipeline ne réagit à aucun CC tant que vous n'en avez pas appris un. Les anciens projets restés sur l'ancienne table d'usine s'ouvrent sans assignation ; un projet où vous aviez changé au moins une assignation garde ses assignations."],
+ midi_hdr=["Commande", "Type"],
+ midi=[["Rate", "Continu 0-127 ; 14 bits avec le CC n+32 si appris sur un CC n de 0 à 31"], ["Depth", "Continu 0-127 ; 14 bits avec le CC n+32 si appris sur un CC n de 0 à 31"],
+       ["Mode", "Sélecteur 8 positions : 0-127 découpé en 8 zones égales (Sine à Env P)"],
+       ["Tempo Sync", "Bascule : 64 et plus = ON"],
+       ["Footswitch", "Chaque appui bascule marche / arrêt (par défaut, pour les footswitchs momentanés comme la M-Vave Chocolate) ou à accrochage (127 = on / 0 = off)"]],
  midi2=["<b>Mode du footswitch MIDI</b> : clic droit &gt; <b>Settings</b> &gt; <b>MIDI footswitch: each press toggles on / off</b> (par défaut : un appui = marche, l'appui suivant = arrêt, inutile de maintenir) ou <b>MIDI footswitch latching (127 = on / 0 = off)</b> pour les footswitchs à accrochage.",
         "<b>Pédales d'expression</b> sur RATE ou DEPTH : mouvement lissé (rampe entre deux messages, puis lissage à 2 pôles), CC 14 bits accepté, course apprise automatiquement (0 et 100 % atteints même si la pédale n'envoie que 2-116) et petites zones mortes aux butées. Une pédale sur RATE en Env P règle l'amplitude du bend en temps réel.",
         "<b>Program Change</b> 1 à 15 : presets d'usine."],
  win_t="8. Fenêtre et écran",
- win=["Clic droit &gt; <b>Window size</b> : <b>60 % (default)</b>, <b>75 %</b>, <b>100 %</b>. La fenêtre s'ouvre à la même taille par défaut que les autres pédales simples Studio Wiga et ne peut jamais être réduite en dessous ; tirez le coin pour l'agrandir (proportions bloquées).",
+ win=["Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b>, <b>100 %</b> redimensionne cette fenêtre ; <b>(default)</b> signale la taille par défaut choisie. En bas de ce sous-menu, <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Pipeline (réglage commun à toutes les instances, enregistré sur l'ordinateur) ; la fenêtre ouverte prend aussi tout de suite cette taille. Au départ, la taille par défaut est 60 %, comme les autres pédales simples Studio Wiga. La taille n'est pas sauvegardée avec le projet : à chaque ouverture, la fenêtre revient à la taille par défaut. Elle ne peut jamais être réduite sous 60 % ; tirez le coin pour l'agrandir (proportions bloquées).",
       "La partie gauche de l'écran affiche pendant 2,5 s la valeur de la commande que vous venez de bouger, avec son rôle dans le mode en cours (par exemple <b>RATE (BEND RANGE)</b> en Env P, <b>DEPTH (MIX) 50 / 50</b>). Le reste du temps, elle montre le mode, la vitesse du LFO et l'écart de hauteur en cents en direct (la profondeur du bend en Env P).", "<b>Oscilloscope</b> : la partie droite de l'écran dessine la modulation de hauteur en direct (animée, 30 images par seconde), en défilant de droite à gauche : le bord droit, c'est ce que vous entendez maintenant. RATE change le nombre de cycles, DEPTH la hauteur, MODE la forme (sinus, triangle, rampe sonar, carré, aléatoire). Dans les modes d'enveloppe, la courbe suit votre jeu : la vague gonfle (Env D), accélère (Env R) ou plonge comme un levier de vibrato (Env P) à chaque attaque, et reste plate quand rien ne joue. En bypass, la courbe devient plate et grisée."],
  disp_cap="Écran : informations et oscilloscope en direct (Sine, Env P), puis valeur de la commande qu'on règle (Rate en Hz, Rate en synchro tempo).",
  pre_t="9. Presets",
@@ -319,8 +331,8 @@ T["fr"] = dict(
        ["Retard", "0,6 ms minimum plus la moitié de la course de modulation (jusqu'à environ 11 ms à DEPTH maximum et RATE lent) ; aucune latence déclarée à l'hôte, comme un vibrato matériel (l'original mesurait environ 52 ms)"],
        ["Plage de hauteur", "Jusqu'à environ +4 / -6 demi-tons (limiteur de pente : jamais de lecture à l'envers)"],
        ["Fréquences", "44,1 à 192 kHz"], ["Version", VERSION],
-       ["Fenêtre", "60 % (par défaut, c'est aussi la taille minimale), 75 %, 100 % ; anti-gel v2 sous Windows (rendu logiciel, caches d'affichage refaits par un timer, chien de garde de redessin, aucun appel à l'hôte depuis le thread audio)"],
-       ["MIDI", "MIDI Learn sur 5 commandes (sauvegardé avec le projet), CC 20 à 24 par défaut (14 bits sur CC 52-53), Program Change 1 à 15, tous canaux"]],
+       ["Fenêtre", "Plugin size 60 % (minimum), 75 %, 100 %, taille par défaut des nouvelles fenêtres au choix (60 % au départ) ; anti-gel v2 sous Windows (rendu logiciel, caches d'affichage refaits par un timer, chien de garde de redessin, aucun appel à l'hôte depuis le thread audio)"],
+       ["MIDI", "MIDI Learn sur 5 commandes (sauvegardé avec le projet), aucun CC assigné par défaut (14 bits sur CC n+32 pour Rate et Depth), Program Change 1 à 15, tous canaux"]],
 )
 
 W = A4[0] - 36 * mm
@@ -360,7 +372,7 @@ def section(lang):
     f.append(P(t["fs_t"], "h1")); f += bullets(t["fs"])
     f.append(KeepTogether([Spacer(1, 2 * mm), img(fs_img, W * 0.50), P(t["fs_cap"], "small")]))
     f.append(P(t["midi_t"], "h1")); f += [P(x) for x in t["midi_txt"]]
-    f.append(Spacer(1, 2 * mm)); f.append(KeepTogether([table([t["midi_hdr"]] + t["midi"], [30 * mm, 24 * mm, W - 54 * mm])])); f.append(Spacer(1, 3 * mm))
+    f.append(Spacer(1, 2 * mm)); f.append(KeepTogether([table([t["midi_hdr"]] + t["midi"], [30 * mm, W - 30 * mm])])); f.append(Spacer(1, 3 * mm))
     f += bullets(t["midi2"])
     f.append(P(t["win_t"], "h1")); f += [P(x) for x in t["win"]]
     f.append(KeepTogether([img(disp_img, W * 0.92), Spacer(1, 2 * mm), img(disp2_img, W * 0.92), P(t["disp_cap"], "small")]))
