@@ -91,7 +91,8 @@ public:
     std::atomic<float> shownHz { 0.0f };          // vitesse du LFO en cours
     std::atomic<double> hostBpm { 0.0 };          // tempo du DAW (0 = inconnu)
 
-    enum MidiMap
+    // ancienne table d'usine (avant v1.5.1) : sert seulement a vider au chargement les anciens projets qui l'ont gardee
+    enum LegacyMidiMap
     {
         ccRate = 20, ccDepth = 21,
         ccMode = 22,        // 0..127 -> 8 positions
@@ -102,14 +103,15 @@ public:
     static const char* knobId (int i) { return i == 0 ? "rate" : "depth"; }
 
     // MIDI Learn : toutes les commandes de la facade (meme ordre que la file anti-gel queuedId)
+    // v1.5.1 : aucun CC assigne par defaut (MIDI Learn uniquement) ; legacyCC = ancien numero d'usine (20 a 24)
     enum LearnType { learnContinuous, learnToggle, learnSelector, learnFootswitch };
-    struct LearnDef { const char* id; const char* name; int defaultCC; int type; int positions; };
+    struct LearnDef { const char* id; const char* name; int defaultCC; int type; int positions; int legacyCC; };
     static constexpr int numLearn = 5;
     static const LearnDef& learnDef (int i);
     std::atomic<int> ccMap[numLearn];
     std::atomic<int> learnTarget { -1 };
     std::atomic<int> lastLearned { -1 };
-    void resetMidiMap();
+    void resetMidiMap();                         // efface toutes les assignations
 
 private:
     void handleMidi (juce::MidiBuffer& midi);

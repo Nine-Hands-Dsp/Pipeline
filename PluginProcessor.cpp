@@ -52,11 +52,11 @@ const PipelineAudioProcessor::LearnDef& PipelineAudioProcessor::learnDef (int i)
 {
     static const LearnDef defs[numLearn] =
     {
-        { "rate",   "Rate",       ccRate,       learnContinuous, 0 },
-        { "depth",  "Depth",      ccDepth,      learnContinuous, 0 },
-        { "mode",   "Mode",       ccMode,       learnSelector,   8 },   // 0..127 -> 8 positions
-        { "sync",   "Tempo Sync", ccSync,       learnToggle,     2 },   // >= 64 : ON
-        { "active", "Footswitch", ccFootswitch, learnFootswitch, 0 },
+        { "rate",   "Rate",       -1, learnContinuous, 0, ccRate },
+        { "depth",  "Depth",      -1, learnContinuous, 0, ccDepth },
+        { "mode",   "Mode",       -1, learnSelector,   8, ccMode },         // 0..127 -> 8 positions
+        { "sync",   "Tempo Sync", -1, learnToggle,     2, ccSync },         // >= 64 : ON
+        { "active", "Footswitch", -1, learnFootswitch, 0, ccFootswitch },
     };
     return defs[jlimit (0, numLearn - 1, i)];
 }
@@ -407,8 +407,14 @@ void PipelineAudioProcessor::setStateInformation (const void* data, int size)
         {
             auto state = ValueTree::fromXml (*xml);
             currentPreset = (int) state.getProperty ("currentPreset", 0);
+            // ancien projet (sans ces proprietes, ou avec la table d'usine CC 20-24 jamais modifiee) : tout est vide
+            bool untouchedFactory = true;
             for (int i = 0; i < numLearn; ++i)
-                ccMap[i].store (jlimit (-1, 127, (int) state.getProperty (String ("cc_") + learnDef (i).id, learnDef (i).defaultCC)));
+            {
+                ccMap[i].store (jlimit (-1, 127, (int) state.getProperty (String ("cc_") + learnDef (i).id, learnDef (i).legacyCC)));
+                if (ccMap[i].load() != learnDef (i).legacyCC) untouchedFactory = false;
+            }
+            if (untouchedFactory) resetMidiMap();
             apvts.replaceState (state);
             ++presetCounter;
         }

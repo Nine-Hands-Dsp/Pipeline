@@ -992,7 +992,7 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
     }
     midi.addSeparator();
     if (proc.learnTarget.load() >= 0) midi.addItem (1200, "Cancel MIDI learn");
-    midi.addItem (1201, "Reset MIDI to defaults (CC 20-24)");
+    midi.addItem (1201, "Clear all MIDI assignments");
     midi.addSeparator();
     midi.addItem (902, "Mode: 8 zones / Tempo sync: 64+ on", false);
     midi.addItem (906, "CC n+32 = fine (14-bit) for knobs on CC 0-31", false);

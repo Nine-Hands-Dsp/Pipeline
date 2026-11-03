@@ -19,7 +19,7 @@ Taille de fenêtre : clic droit > *Plugin size* : 60 % (taille minimale, impossi
 
 ## MIDI
 
-MIDI Learn sur toutes les commandes (clic droit), sauvegardé avec le projet. Par défaut : Rate CC 20, Depth CC 21, Mode CC 22 (8 zones), Tempo Sync CC 23, Footswitch CC 24 ; 14 bits sur CC 52-53 ; Program Change 1-15 = presets d'usine. Pédales d'expression : rampe + lissage 2 pôles, course apprise automatiquement, zones mortes.
+MIDI Learn sur toutes les commandes (clic droit), sauvegardé avec le projet. Aucun CC assigné par défaut : clic droit > MIDI > Learn (Rate, Depth, Mode en 8 zones, Tempo Sync, Footswitch) ; « Clear all MIDI assignments » efface tout ; un potard appris sur un CC n de 0 à 31 accepte le poids faible 14 bits sur le CC n+32 ; Program Change 1-15 = presets d'usine. Pédales d'expression : rampe + lissage 2 pôles, course apprise automatiquement, zones mortes.
 
 ## Anti-gel v2
 
@@ -43,6 +43,7 @@ Le workflow GitHub `build.yml` produit les artefacts `Pipeline-VST3-Windows` et 
 
 ## Historique
 
+- **1.5.1** : plus aucun CC MIDI assigné par défaut (tout passe par le MIDI Learn).
 - **1.5.0** : clic droit > Plugin size > Default size (new windows) : taille par défaut des nouvelles fenêtres au choix, comme dans Octopus.
 - **1.4.3** : potards RATE / DEPTH et bloc MODE remontés, titres RATE / DEPTH / MODE éloignés des potards, logo Studio Wiga du kit (net, plus de lettres grisées) remonté au-dessus du filet, ombres fantômes des anciennes étiquettes effacées.
 - **1.4.2** : sélecteur MODE à crans comme Ring Think : le repère saute d'une position à l'autre, sans glissement, butées en fin de course.

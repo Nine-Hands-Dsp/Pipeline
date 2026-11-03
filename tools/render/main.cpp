@@ -108,6 +108,8 @@ int main (int argc, char** argv)
             for (int k = 0; k < 20; ++k) { MidiBuffer e; b.clear(); proc.processBlock (b, e); }
             pump (3);
         };
+        // aucun CC par defaut depuis v1.5.1 : on assigne Rate = CC 20, Mode = CC 22, Footswitch = CC 24 comme un MIDI Learn
+        proc.ccMap[0].store (20); proc.ccMap[2].store (22); proc.ccMap[4].store (24);
         sendCC (20, 2);   const float a = proc.raw ("rate");
         sendCC (20, 116); const float c = proc.raw ("rate");
         sendCC (20, 59);  const float mid = proc.raw ("rate");
