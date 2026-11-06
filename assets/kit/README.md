@@ -1,4 +1,4 @@
-# Kit graphique Studio Wiga (repris du visuel FreakOut)
+# Kit graphique NINE HANDS | DSP (repris du visuel FreakOut)
 
 | Fichier | Contenu | Usage |
 |---|---|---|

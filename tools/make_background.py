@@ -1,5 +1,5 @@
 """
-PIPELINE (Studio Wiga) - fond du plugin a partir du visuel « vagues » de l'utilisateur
+PIPELINE (NINE HANDS | DSP) - fond du plugin a partir du visuel « vagues » de l'utilisateur
 (design/source/pipeline_visuel_vagues.png, 1117 x 1408).
 
 Le visuel est la reference : son eclairage (lumiere douce en haut a gauche) et ses vagues sont conserves.
@@ -7,7 +7,7 @@ Modifications demandees :
   - pedale un peu moins haute : la zone entre l'ecran et le footswitch (ou etait la LED) est resserree,
   - potards RATE / DEPTH abaisses (+14 px), inscription MODE placee AU-DESSUS du selecteur,
   - LED deplacee en haut (au centre, entre les deux potards),
-  - footswitch et logo Studio Wiga remontes (le logo ne touche plus le footswitch ni le filet du cadre),
+  - footswitch et logo NINE HANDS | DSP remontes (le logo ne touche plus le footswitch ni le filet du cadre),
   - pedale agrandie dans la fenetre (marges du mur reduites au minimum, taille de fenetre inchangee).
 Les vagues passant sous les elements du bas, le footswitch reste celui du visuel (deplace d'un bloc, sans retouche).
 Etapes :
@@ -387,7 +387,7 @@ def to_dst(y):                                            # ligne source -> lign
 LOGO_DST_BOTTOM = int(round(to_dst(1326))) - 15     # anneaux du logo bien au-dessus du filet du cadre
 
 # logo recolle (blanc du visuel) au-dessus du filet
-# logo du kit Studio Wiga (blanc net, a la taille du logo du visuel) au lieu du matte extrait : sur les rayures claires des
+# logo du kit NINE HANDS | DSP (blanc net, a la taille du logo du visuel) au lieu du matte extrait : sur les rayures claires des
 # vagues le matte donnait des lettres grisees ; fine ombre portee pour rester lisible sur la vague claire
 _lg = Image.open(os.path.join(ROOT, 'assets', 'logo_studio_wiga_blanc.png')).convert('RGBA')
 _lg = _lg.crop(_lg.getbbox())

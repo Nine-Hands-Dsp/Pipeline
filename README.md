@@ -1,8 +1,8 @@
-# Pipeline (Studio Wiga)
+# Pipeline (NINE HANDS | DSP)
 
-Plugin VST3 (Windows x64 et macOS universel) au format pédale simple : **vibrato de hauteur à 8 modes**, d'après le fonctionnement de l'**EarthQuaker Devices Aqueduct**. Nom dans le DAW : **Pipeline (Studio Wiga)**.
+Plugin VST3 (Windows x64 et macOS universel) au format pédale simple : **vibrato de hauteur à 8 modes**, d'après le fonctionnement de l'**EarthQuaker Devices Aqueduct**. Nom dans le DAW : **Pipeline (NINE HANDS | DSP)**.
 
-Visuel : `design/source/pipeline_visuel_vagues.png` (fourni par Studio Wiga, vagues), retravaillé par `tools/make_background.py` (pédale moins haute, potards abaissés, LED en haut, footswitch et logo remontés, MODE au-dessus du sélecteur, cadrage serré). Footswitch d'Echoflex (vue de dessus). Toutes les positions passent par `Layout.h`.
+Visuel : `design/source/pipeline_visuel_vagues.png` (fourni par NINE HANDS | DSP, vagues), retravaillé par `tools/make_background.py` (pédale moins haute, potards abaissés, LED en haut, footswitch et logo remontés, MODE au-dessus du sélecteur, cadrage serré). Footswitch d'Echoflex (vue de dessus). Toutes les positions passent par `Layout.h`.
 
 ## Commandes
 
@@ -45,7 +45,7 @@ Le workflow GitHub `build.yml` produit les artefacts `Pipeline-VST3-Windows` et 
 
 - **1.5.1** : plus aucun CC MIDI assigné par défaut (tout passe par le MIDI Learn).
 - **1.5.0** : clic droit > Plugin size > Default size (new windows) : taille par défaut des nouvelles fenêtres au choix, comme dans Octopus.
-- **1.4.3** : potards RATE / DEPTH et bloc MODE remontés, titres RATE / DEPTH / MODE éloignés des potards, logo Studio Wiga du kit (net, plus de lettres grisées) remonté au-dessus du filet, ombres fantômes des anciennes étiquettes effacées.
+- **1.4.3** : potards RATE / DEPTH et bloc MODE remontés, titres RATE / DEPTH / MODE éloignés des potards, logo NINE HANDS | DSP du kit (net, plus de lettres grisées) remonté au-dessus du filet, ombres fantômes des anciennes étiquettes effacées.
 - **1.4.2** : sélecteur MODE à crans comme Ring Think : le repère saute d'une position à l'autre, sans glissement, butées en fin de course.
 - **1.4.1** : sélecteur MODE à crans (résistance, bascule avec léger rebond, butées en fin de course), étiquettes des modes agrandies et éteintes quand l'effet est coupé, nom des presets agrandi (le plus long tient entier), zone assombrie du footswitch agrandie.
 - **1.4.0** : sélecteur MODE agrandi avec crans plus marqués, étiquette du mode choisi allumée en bleu (écriture LED), LED du haut agrandie (halo adouci), écran : texte à gauche et oscilloscope animé de la modulation à droite.
@@ -53,5 +53,5 @@ Le workflow GitHub `build.yml` produit les artefacts `Pipeline-VST3-Windows` et 
 - **1.3.1** : ombres et cercles des anciens potards supprimés, graduations redessinées (dont ENV R / ENV P), jacks et IN / OUT au niveau du titre, footswitch remonté sans déformer les vagues, écran nettoyé.
 - **1.3.0** : potards moletés et embases jack de Holyverb, potards encore abaissés, pédale élargie.
 - **1.2.0** : nouveau visuel « vagues » avec les mêmes retouches (hauteur réduite, potards abaissés, LED en haut, footswitch et logo remontés, MODE au-dessus du sélecteur) ; pédale agrandie dans la fenêtre (marges réduites, taille de fenêtre inchangée).
-- **1.1.0** : visuel définitif de Studio Wiga intégré et retouché (hauteur réduite, potards abaissés, LED en haut, footswitch Echoflex et logo remontés, MODE au-dessus du sélecteur).
+- **1.1.0** : visuel définitif de NINE HANDS | DSP intégré et retouché (hauteur réduite, potards abaissés, LED en haut, footswitch Echoflex et logo remontés, MODE au-dessus du sélecteur).
 - **1.0.0** : première version (8 modes, Flexi-Switch, synchro tempo, MIDI Learn, 15 presets, visuel provisoire).

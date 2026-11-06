@@ -1,4 +1,4 @@
-// PIPELINE (Studio Wiga) - moteur audio
+// PIPELINE (NINE HANDS | DSP) - moteur audio
 // Vibrato de hauteur a ligne de retard courte, d'apres le fonctionnement de l'EarthQuaker Devices Aqueduct :
 //   Sine, Triangle, Ramp, Square : forme d'onde de la VARIATION DE HAUTEUR (le temps de retard est son integrale),
 //   Random : « disque voile » a faible Depth, glissandos aleatoires de plus en plus desordonnes en montant Depth,

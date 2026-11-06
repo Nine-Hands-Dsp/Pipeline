@@ -1,4 +1,4 @@
-# PIPELINE (Studio Wiga) - notice PDF bilingue (anglais puis francais), illustree avec le rendu reel du plugin.
+# PIPELINE (NINE HANDS | DSP) - notice PDF bilingue (anglais puis francais), illustree avec le rendu reel du plugin.
 # Usage : python3 tools/manual.py [<dossier des captures (tools/render)>] <fichier PDF de sortie>
 #   avec captures : recompose les images et les copie dans tools/manual_assets/ ;
 #   sans captures : reprend les images composees de tools/manual_assets/ (extraites de la notice precedente).
@@ -183,11 +183,11 @@ T = {}
 T["en"] = dict(
  lang="ENGLISH", sub="8-mode pitch vibrato", ver="User manual · version " + VERSION,
  intro_t="1. Introduction",
- intro=["<b>Pipeline</b> is a Studio Wiga VST3 plugin modelled on the <b>EarthQuaker Devices Aqueduct</b> vibrato: same controls (RATE, DEPTH and an 8-position MODE selector), same eight modulation modes from \"not that weird\" to \"wow, that's weird\", and the same Flexi-Switch footswitch.",
+ intro=["<b>Pipeline</b> is a NINE HANDS | DSP VST3 plugin modelled on the <b>EarthQuaker Devices Aqueduct</b> vibrato: same controls (RATE, DEPTH and an 8-position MODE selector), same eight modulation modes from \"not that weird\" to \"wow, that's weird\", and the same Flexi-Switch footswitch.",
         "Like the pedal, Pipeline is a true pitch vibrato: the guitar goes through a very short delay line whose length is modulated, so you hear a change of pitch (not of volume, which would be a tremolo). In the waveform modes the signal is 100 % wet, like the original; only <b>Env P</b> has a dry / wet mix.",
         "Pipeline was built from the original manual, the manufacturer's page and reviews (Premier Guitar, MusicRadar, Guitar World, Bonedo). The shape of each mode was designed as the shape of the <b>pitch</b> movement you hear, then measured on test signals."],
  inst_t="2. Installation",
- inst=[("Windows", "Copy <b>Pipeline.vst3</b> to <b>C:\\Program Files\\Common Files\\VST3</b>. In Reaper: Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; <i>Re-scan</i>. The plugin appears as <b>Pipeline (Studio Wiga)</b>."),
+ inst=[("Windows", "Copy <b>Pipeline.vst3</b> to <b>C:\\Program Files\\Common Files\\VST3</b>. In Reaper: Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; <i>Re-scan</i>. The plugin appears as <b>Pipeline (NINE HANDS | DSP)</b>."),
        ("macOS", "Unzip the archive and copy <b>Pipeline.vst3</b> to <b>/Library/Audio/Plug-Ins/VST3</b> (or ~/Library/Audio/Plug-Ins/VST3). The build is universal (Apple Silicon and Intel) and ad hoc signed; if macOS blocks it, run <i>xattr -cr</i> on the file. Then re-scan in Reaper.")],
  ov_t="3. Interface overview",
  ov_rows=[["#", "Control", "Role"], ["1", "RATE", "LFO speed (in Env R: envelope sensitivity; in Env P: bend sensitivity and range)"],
@@ -236,7 +236,7 @@ T["en"] = dict(
         "<b>Expression pedals</b> on RATE or DEPTH are smoothed (ramp between two messages, then a 2-pole smoothing), 14-bit CC accepted, pedal travel learnt automatically (0 and 100 % reached even if the pedal only sends 2-116) and small dead zones at both ends. A pedal on RATE in Env P becomes a real-time bend range control.",
         "<b>Program Change</b> 1-15 loads the factory presets."],
  win_t="8. Window and display",
- win=["Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b>, <b>100 %</b> resizes this window; <b>(default)</b> marks the default size you have chosen. At the bottom of this submenu, <b>Default size (new windows)</b> chooses the size at which every new window of Pipeline opens (one setting shared by all instances, saved on the computer); the open window also takes this size at once. At first the default size is 60 %, the same as the other Studio Wiga single pedals. The size is not saved with the project: each time it is opened, the window comes back at the default size. It can never be made smaller than 60 %; drag the corner to enlarge it (proportions locked).",
+ win=["Right-click &gt; <b>Plugin size</b>: <b>60 %</b>, <b>75 %</b>, <b>100 %</b> resizes this window; <b>(default)</b> marks the default size you have chosen. At the bottom of this submenu, <b>Default size (new windows)</b> chooses the size at which every new window of Pipeline opens (one setting shared by all instances, saved on the computer); the open window also takes this size at once. At first the default size is 60 %, the same as the other NINE HANDS | DSP single pedals. The size is not saved with the project: each time it is opened, the window comes back at the default size. It can never be made smaller than 60 %; drag the corner to enlarge it (proportions locked).",
       "The left part of the display shows the value of the control you just moved for 2.5 s, with its meaning in the current mode (for example <b>RATE (BEND RANGE)</b> in Env P, <b>DEPTH (MIX) 50 / 50</b>). The rest of the time it shows the mode, the LFO speed and the live pitch deviation in cents (the bend depth in Env P).", "<b>Scope</b>: the right part of the display draws the pitch modulation as it happens (animated, 30 frames per second), scrolling from right to left: the right edge is what you hear now. RATE changes the number of cycles, DEPTH the height, MODE the shape (sine, triangle, sonar ramp, square, random). In the envelope modes it follows your playing: the wave swells (Env D), speeds up (Env R) or dips like a tremolo arm (Env P) with each attack, and stays flat while nothing is played. In bypass the trace goes flat and dim."],
  disp_cap="Display: live information and scope (Sine, Env P), then the value of the control being moved (Rate in Hz, Rate in tempo sync).",
  pre_t="9. Presets",
@@ -260,11 +260,11 @@ T["en"] = dict(
 T["fr"] = dict(
  lang="FRANÇAIS", sub="Vibrato de hauteur à 8 modes", ver="Notice d'utilisation · version " + VERSION,
  intro_t="1. Présentation",
- intro=["<b>Pipeline</b> est un plugin VST3 Studio Wiga qui reprend le vibrato <b>EarthQuaker Devices Aqueduct</b> : mêmes commandes (RATE, DEPTH et un sélecteur MODE à 8 positions), mêmes huit modes de modulation, du « pas si bizarre » au « franchement bizarre », et même footswitch Flexi-Switch.",
+ intro=["<b>Pipeline</b> est un plugin VST3 NINE HANDS | DSP qui reprend le vibrato <b>EarthQuaker Devices Aqueduct</b> : mêmes commandes (RATE, DEPTH et un sélecteur MODE à 8 positions), mêmes huit modes de modulation, du « pas si bizarre » au « franchement bizarre », et même footswitch Flexi-Switch.",
         "Comme la pédale, Pipeline est un vrai vibrato de hauteur : la guitare passe dans une ligne de retard très courte dont la longueur est modulée, on entend donc une variation de hauteur (et non de volume, ce serait un trémolo). Dans les modes à forme d'onde, le signal est 100 % traité, comme sur l'original ; seul <b>Env P</b> a un mélange sec / traité.",
         "Pipeline a été construit d'après le manuel d'origine, la page du fabricant et les tests (Premier Guitar, MusicRadar, Guitar World, Bonedo). La forme de chaque mode a été dessinée comme la forme du mouvement de <b>hauteur</b> que l'on entend, puis mesurée sur des signaux de test."],
  inst_t="2. Installation",
- inst=[("Windows", "Copiez <b>Pipeline.vst3</b> dans <b>C:\\Program Files\\Common Files\\VST3</b>. Dans Reaper : Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; <i>Re-scan</i>. Le plugin apparaît sous le nom <b>Pipeline (Studio Wiga)</b>."),
+ inst=[("Windows", "Copiez <b>Pipeline.vst3</b> dans <b>C:\\Program Files\\Common Files\\VST3</b>. Dans Reaper : Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; <i>Re-scan</i>. Le plugin apparaît sous le nom <b>Pipeline (NINE HANDS | DSP)</b>."),
        ("macOS", "Décompressez l'archive et copiez <b>Pipeline.vst3</b> dans <b>/Library/Audio/Plug-Ins/VST3</b> (ou ~/Library/Audio/Plug-Ins/VST3). La version est universelle (Apple Silicon et Intel) et signée localement ; si macOS la bloque, lancez <i>xattr -cr</i> sur le fichier. Relancez ensuite le scan dans Reaper.")],
  ov_t="3. Vue d'ensemble",
  ov_rows=[["N°", "Commande", "Rôle"], ["1", "RATE", "Vitesse du LFO (en Env R : sensibilité de l'enveloppe ; en Env P : sensibilité et amplitude du bend)"],
@@ -313,7 +313,7 @@ T["fr"] = dict(
         "<b>Pédales d'expression</b> sur RATE ou DEPTH : mouvement lissé (rampe entre deux messages, puis lissage à 2 pôles), CC 14 bits accepté, course apprise automatiquement (0 et 100 % atteints même si la pédale n'envoie que 2-116) et petites zones mortes aux butées. Une pédale sur RATE en Env P règle l'amplitude du bend en temps réel.",
         "<b>Program Change</b> 1 à 15 : presets d'usine."],
  win_t="8. Fenêtre et écran",
- win=["Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b>, <b>100 %</b> redimensionne cette fenêtre ; <b>(default)</b> signale la taille par défaut choisie. En bas de ce sous-menu, <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Pipeline (réglage commun à toutes les instances, enregistré sur l'ordinateur) ; la fenêtre ouverte prend aussi tout de suite cette taille. Au départ, la taille par défaut est 60 %, comme les autres pédales simples Studio Wiga. La taille n'est pas sauvegardée avec le projet : à chaque ouverture, la fenêtre revient à la taille par défaut. Elle ne peut jamais être réduite sous 60 % ; tirez le coin pour l'agrandir (proportions bloquées).",
+ win=["Clic droit &gt; <b>Plugin size</b> : <b>60 %</b>, <b>75 %</b>, <b>100 %</b> redimensionne cette fenêtre ; <b>(default)</b> signale la taille par défaut choisie. En bas de ce sous-menu, <b>Default size (new windows)</b> choisit la taille d'ouverture de toutes les nouvelles fenêtres de Pipeline (réglage commun à toutes les instances, enregistré sur l'ordinateur) ; la fenêtre ouverte prend aussi tout de suite cette taille. Au départ, la taille par défaut est 60 %, comme les autres pédales simples NINE HANDS | DSP. La taille n'est pas sauvegardée avec le projet : à chaque ouverture, la fenêtre revient à la taille par défaut. Elle ne peut jamais être réduite sous 60 % ; tirez le coin pour l'agrandir (proportions bloquées).",
       "La partie gauche de l'écran affiche pendant 2,5 s la valeur de la commande que vous venez de bouger, avec son rôle dans le mode en cours (par exemple <b>RATE (BEND RANGE)</b> en Env P, <b>DEPTH (MIX) 50 / 50</b>). Le reste du temps, elle montre le mode, la vitesse du LFO et l'écart de hauteur en cents en direct (la profondeur du bend en Env P).", "<b>Oscilloscope</b> : la partie droite de l'écran dessine la modulation de hauteur en direct (animée, 30 images par seconde), en défilant de droite à gauche : le bord droit, c'est ce que vous entendez maintenant. RATE change le nombre de cycles, DEPTH la hauteur, MODE la forme (sinus, triangle, rampe sonar, carré, aléatoire). Dans les modes d'enveloppe, la courbe suit votre jeu : la vague gonfle (Env D), accélère (Env R) ou plonge comme un levier de vibrato (Env P) à chaque attaque, et reste plate quand rien ne joue. En bypass, la courbe devient plate et grisée."],
  disp_cap="Écran : informations et oscilloscope en direct (Sine, Env P), puis valeur de la commande qu'on règle (Rate en Hz, Rate en synchro tempo).",
  pre_t="9. Presets",
@@ -393,12 +393,12 @@ def deco(c, doc):
     c.setFillColor(DARK); c.rect(0, A4[1] - 6 * mm, A4[0], 6 * mm, stroke=0, fill=1)
     c.setFillColor(ACC); c.rect(0, A4[1] - 6.8 * mm, A4[0], 0.8 * mm, stroke=0, fill=1)
     c.setFont("Pop", 7.5); c.setFillColor(GREY)
-    c.drawString(18 * mm, 10 * mm, "Pipeline (Studio Wiga) · v" + VERSION)
+    c.drawString(18 * mm, 10 * mm, "Pipeline (NINE HANDS | DSP) · v" + VERSION)
     c.drawRightString(A4[0] - 18 * mm, 10 * mm, str(doc.page))
     c.restoreState()
 
 doc = BaseDocTemplate(OUT, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=18 * mm,
-                      title="Pipeline - Manual / Notice v" + VERSION, author="Studio Wiga")
+                      title="Pipeline - Manual / Notice v" + VERSION, author="NINE HANDS | DSP")
 def cover_bg(c, doc):
     c.saveState(); c.setFillColor(colors.black); c.rect(0, 0, A4[0], A4[1], stroke=0, fill=1)
     c.setFillColor(ACC); c.rect(0, A4[1] - 3 * mm, A4[0], 3 * mm, stroke=0, fill=1); c.restoreState()

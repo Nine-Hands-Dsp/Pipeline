@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "NineHandsFolder.h"
 #include "PluginEditor.h"
 
 using namespace juce;
@@ -340,7 +341,7 @@ void PipelineAudioProcessor::applyFactoryPreset (int index)
 File PipelineAudioProcessor::getUserPresetFile()
 {
     return File::getSpecialLocation (File::userApplicationDataDirectory)
-             .getChildFile ("Studio Wiga").getChildFile ("Pipeline").getChildFile ("UserPresets.xml");
+             .getChildFile (nhd::folderName()).getChildFile ("Pipeline").getChildFile ("UserPresets.xml");
 }
 
 static const char* presetIds[] = { "rate", "depth", "mode", "sync" };

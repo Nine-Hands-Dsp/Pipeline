@@ -7,7 +7,7 @@
 #include "PipelineDSP.h"
 
 //==============================================================================
-// PIPELINE (Studio Wiga) - vibrato de hauteur a 8 modes, d'apres l'EarthQuaker Devices Aqueduct.
+// PIPELINE (NINE HANDS | DSP) - vibrato de hauteur a 8 modes, d'apres l'EarthQuaker Devices Aqueduct.
 // Voir README.md et PipelineDSP.h.
 //==============================================================================
 

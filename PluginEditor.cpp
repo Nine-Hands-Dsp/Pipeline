@@ -329,7 +329,7 @@ void PipelineAudioProcessorEditor::resized()
 }
 
 //==============================================================================
-// Anti-gel v2 (Studio Wiga) :
+// Anti-gel v2 (NINE HANDS | DSP) :
 //  1. moteur de rendu logiciel force sur Windows, applique a chaque nouvelle fenetre hote et reverifie toutes les secondes ;
 //  2. aucun calcul lourd dans paint() : caches reconstruits par le timer (apres stabilisation de la taille / changement d'echelle) ;
 //  3. chien de garde : redessin demande non servi depuis 1,5 s -> moteur de rendu reapplique, fenetre redessinee ;
@@ -999,7 +999,7 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
     midi.addItem (907, "Program Change 1-" + String (PipelineAudioProcessor::getNumFactoryPresets()) + "  Factory presets", false);
     menu.addSubMenu ("MIDI map", midi);
     menu.addSeparator();
-    menu.addItem (999, "Pipeline vibrato v" + String (JucePlugin_VersionString) + " - STUDIO WIGA", false);
+    menu.addItem (999, "Pipeline vibrato v" + String (JucePlugin_VersionString) + " - NINE HANDS | DSP", false);
 
     // le menu s'ouvre sous le pointeur (et non en haut de la fenetre)
     const auto mouse = Desktop::getInstance().getMainMouseSource().getScreenPosition().roundToInt();
