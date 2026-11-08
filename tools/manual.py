@@ -18,7 +18,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = sys.argv[1] if len(sys.argv) > 2 else None
 OUT = sys.argv[-1]
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 TMP = os.path.dirname(os.path.abspath(OUT))
 FONTS = os.path.join(ROOT, "assets", "fonts")
 
@@ -243,7 +243,7 @@ T["en"] = dict(
  pre=["15 factory presets are included (also in the DAW preset menu and on MIDI Program Change). The first two are the \"Suggested Settings\" of the original manual. Nine user slots can be saved from the preset menu (they store Rate, Depth, Mode and Tempo Sync)."],
  fac_hdr=["#", "Preset", "Mode", "Rate", "Depth", "Description"],
  tips_t="10. Playing tips",
- tips=["In Reaper put Pipeline first, before Two Notes Genome or any amp simulator: the envelope modes need the clean, dynamic guitar signal, and a vibrato in front of the amp sounds like the pedal on a pedalboard.",
+ tips=["In Reaper put Pipeline first, before Ampire or any amp simulator: the envelope modes need the clean, dynamic guitar signal, and a vibrato in front of the amp sounds like the pedal on a pedalboard.",
        "Env P with Flexi-Switch: hold the footswitch only on the chords you want to warp, for Kevin Shields style glide guitar.",
        "Low tunings: Pipeline has no pitch detection, so a 7-string in G or any lower tuning works without limit. On low notes keep DEPTH a little lower: the same deviation in cents is more audible as beating on a big low chord.",
        "Put an expression pedal on DEPTH in Sine or Triangle to fade the vibrato in at the end of held notes, or on RATE to speed up a Leslie-like wobble.",
@@ -320,7 +320,7 @@ T["fr"] = dict(
  pre=["15 presets d'usine sont fournis (aussi dans le menu de presets du DAW et en Program Change MIDI). Les deux premiers sont les « Suggested Settings » du manuel d'origine. Neuf emplacements utilisateur peuvent être enregistrés depuis le menu des presets (ils gardent Rate, Depth, Mode et Tempo Sync)."],
  fac_hdr=["N°", "Preset", "Mode", "Rate", "Depth", "Description"],
  tips_t="10. Conseils d'utilisation",
- tips=["Dans Reaper, placez Pipeline en premier, avant Two Notes Genome ou tout simulateur d'ampli : les modes d'enveloppe ont besoin du signal clair et dynamique de la guitare, et un vibrato devant l'ampli sonne comme la pédale sur un pedalboard.",
+ tips=["Dans Reaper, placez Pipeline en premier, avant Ampire ou tout simulateur d'ampli : les modes d'enveloppe ont besoin du signal clair et dynamique de la guitare, et un vibrato devant l'ampli sonne comme la pédale sur un pedalboard.",
        "Env P avec le Flexi-Switch : maintenez le footswitch seulement sur les accords à « tordre », pour le jeu en glissé façon Kevin Shields.",
        "Accordages graves : Pipeline n'a pas de détection de hauteur, une 7 cordes en G ou plus bas fonctionne sans limite. Sur les notes graves, gardez DEPTH un peu plus bas : un même écart en cents s'entend davantage en battements sur un gros accord grave.",
        "Une pédale d'expression sur DEPTH en Sine ou Triangle fait entrer le vibrato en fin de note tenue ; sur RATE, elle accélère une ondulation façon Leslie.",
