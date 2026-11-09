@@ -229,6 +229,7 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
     pBold     = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
     pLight    = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
     buildPrint();
+    lnf.reg = pMedium; lnf.med = pMedium; lnf.bold = pBold;     // menus en Poppins, comme Octopus
 
     auto edited = [this] { proc.currentPreset = -1; };
     // index des commandes = learnDef du processeur (0 Rate, 1 Depth, 2 Mode, 3 Sync, 4 footswitch)
@@ -982,6 +983,7 @@ void PipelineAudioProcessorEditor::showPresetMenu()
     }
     m.addSubMenu ("Load user preset", load);
     m.addSubMenu ("Save user preset", save);
+    m.setLookAndFeel (&lnf);
     m.showMenuAsync (PopupMenu::Options().withTargetScreenArea (localAreaToGlobal (scaled (presetRect))),
         [safe = Component::SafePointer<PipelineAudioProcessorEditor> (this)] (int r)
         {
@@ -1077,9 +1079,8 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
     menu.addSeparator();
     menu.addItem (999, "Pipeline vibrato v" + String (JucePlugin_VersionString) + " - NINE HANDS | DSP", false);
 
-    // le menu s'ouvre sous le pointeur (et non en haut de la fenetre)
-    const auto mouse = Desktop::getInstance().getMainMouseSource().getScreenPosition().roundToInt();
-    menu.showMenuAsync (PopupMenu::Options().withTargetScreenArea ({ mouse.x, mouse.y, 1, 1 }).withParentComponent (nullptr),
+    menu.setLookAndFeel (&lnf);
+    menu.showMenuAsync (PopupMenu::Options().withMousePosition(),    // menu clic droit : toujours la ou l'on clique
         [safe = Component::SafePointer<PipelineAudioProcessorEditor> (this)] (int r)
         {
             if (safe == nullptr || r == 0) return;

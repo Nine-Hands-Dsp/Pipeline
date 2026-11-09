@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "Layout.h"
+#include "NineHandsMenu.h"
 
 //==============================================================================
 // Potard RATE / DEPTH : le corps (et ses reflets) fait partie du fond, seul le repere peint tourne.
@@ -81,7 +82,8 @@ private:
 };
 
 //==============================================================================
-struct PipelineLookAndFeel : public juce::LookAndFeel_V4
+// menus clic droit au design d'Octopus (NineHandsMenu.h) + poignee de redimensionnement discrete
+struct PipelineLookAndFeel : public NineHandsMenu::MenuLnf
 {
     void drawCornerResizer (juce::Graphics& g, int w, int h, bool over, bool dragging) override
     {

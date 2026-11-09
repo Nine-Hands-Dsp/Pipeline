@@ -58,6 +58,7 @@ Le workflow GitHub `build.yml` produit les artefacts Windows et macOS et publie 
 
 ## Historique
 
+- **1.6.1** : menus clic droit au design d'Octopus (fond sombre arrondi, icônes, coche bleue, chevrons), ouverts à l'endroit du clic ; menu de presets au même design.
 - **1.6.0** : visuel entièrement refait au format NINE HANDS | DSP (1235 x 1800, plein cadre, rendu 4K, vagues / textes / graduations / logo vectoriels), potards moletés agrandis, LED bleue à facettes, mode choisi écrit dans le bleu de la LED, notice en français.
 - **1.5.2** : notice avec Ampire et Impulse ; boutons de téléchargement et Release GitHub.
 - **1.5.1** : plus aucun CC MIDI par défaut (MIDI Learn seulement) ; fabricant NINE HANDS | DSP.

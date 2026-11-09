@@ -6,7 +6,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(Pipeline VERSION 1.6.0)
+project(Pipeline VERSION 1.6.1)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,7 +41,7 @@ juce_add_plugin(Pipeline
   FORMATS VST3
   VST3_CATEGORIES Fx Modulation
   PRODUCT_NAME "Pipeline"
-  VERSION 1.6.0
+  VERSION 1.6.1
   DESCRIPTION "8-mode pitch vibrato (Aqueduct style) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE

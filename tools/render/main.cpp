@@ -1,5 +1,6 @@
 // Captures PNG de la fenetre reelle de Pipeline (meme code que le plugin), pour l'apercu et la notice.
 // Une corde pincee synthetique est jouee pour que la ligne d'info montre l'ecart de hauteur reel.
+#include "BinaryData.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <random>
@@ -142,6 +143,39 @@ int main (int argc, char** argv)
             mk->mouseUp (down); pump (3);
             std::printf ("selecteur : butee basse -> mode %d (attendu 0)\n", (int) proc.raw ("mode"));
         }
+    }
+    // apercu du menu clic droit (design d'Octopus, NineHandsMenu.h) : principal + sous-menu Plugin size
+    {
+        NineHandsMenu::MenuLnf ml;
+        ml.med = ml.reg = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+        ml.bold = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
+        struct It { const char* t; bool sep, sub, tick, active; };
+        auto draw = [&] (std::vector<It> items, int w) {
+            int h = 14; for (auto& i : items) h += i.sep ? 11 : 32;
+            Image im (Image::ARGB, w, h, true);
+            Graphics g (im);
+            ml.drawPopupMenuBackground (g, w, h);
+            int y = 7;
+            for (auto& i : items)
+            {
+                const int ih = i.sep ? 11 : 32;
+                ml.drawPopupMenuItem (g, { 0, y, w, ih }, i.sep, i.active, false, i.tick, i.sub, i.t, {}, nullptr, nullptr);
+                y += ih;
+            }
+            return im;
+        };
+        auto a = draw ({ { "MIDI Learn: Rate (none)", 0, 0, 0, 1 }, { "Clear MIDI: Rate", 0, 0, 0, 0 }, { "", 1, 0, 0, 1 },
+                         { "Plugin size", 0, 1, 0, 1 }, { "", 1, 0, 0, 1 }, { "Factory presets", 0, 1, 0, 1 }, { "Load user preset", 0, 1, 0, 1 },
+                         { "Save user preset", 0, 1, 0, 1 }, { "", 1, 0, 0, 1 }, { "Tempo sync (RATE = note value)", 0, 0, 1, 1 },
+                         { "Settings", 0, 1, 0, 1 }, { "MIDI map", 0, 1, 0, 1 }, { "", 1, 0, 0, 1 },
+                         { "Pipeline vibrato v" JucePlugin_VersionString " - NINE HANDS | DSP", 0, 0, 0, 0 } }, 400);
+        auto b = draw ({ { "60 %  (default)", 0, 0, 1, 1 }, { "75 %", 0, 0, 0, 1 }, { "100 %", 0, 0, 0, 1 }, { "", 1, 0, 0, 1 },
+                         { "Default size (new windows)", 0, 1, 0, 1 } }, 290);
+        Image sheet (Image::RGB, a.getWidth() + b.getWidth() + 60, a.getHeight() + 40, true);
+        Graphics g (sheet); g.fillAll (Colour (0xff2a2d33));
+        g.drawImageAt (a, 20, 20); g.drawImageAt (b, a.getWidth() + 40, 20 + 7 + 32 * 2 + 11);
+        File f = File::getCurrentWorkingDirectory().getChildFile (out).getChildFile ("pipeline_menu.png"); f.deleteFile();
+        FileOutputStream os (f); PNGImageFormat().writeImageToStream (sheet, os);
     }
     ed.reset();
     return 0;
