@@ -6,7 +6,7 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(Pipeline VERSION 1.5.2)
+project(Pipeline VERSION 1.6.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,7 +28,8 @@ endif()
 
 # visuel integre au plugin (aucun fichier externe a l'execution)
 juce_add_binary_data(PipelineAssets SOURCES
-  background.jpg glow_led.png knob_strip.png mode_labels.png
+  background.png controls.png glow_led.png led_on.png NineHandsLogo.svg PipelineWaves.svg
+  assets/fonts/Poppins-Medium.ttf assets/fonts/Poppins-Bold.ttf assets/fonts/Poppins-Light.ttf
   assets/fonts/BarlowCondensed-SemiBold.ttf assets/fonts/BarlowCondensed-Bold.ttf)
 set_target_properties(PipelineAssets PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
@@ -40,7 +41,7 @@ juce_add_plugin(Pipeline
   FORMATS VST3
   VST3_CATEGORIES Fx Modulation
   PRODUCT_NAME "Pipeline"
-  VERSION 1.5.2
+  VERSION 1.6.0
   DESCRIPTION "8-mode pitch vibrato (Aqueduct style) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE

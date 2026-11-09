@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "Layout.h"
 
 //==============================================================================
 // Potard RATE / DEPTH : le corps (et ses reflets) fait partie du fond, seul le repere peint tourne.
@@ -107,14 +108,18 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
 
-    // repere de reference (100 %) et taille par defaut = taille minimale (identique a Echoflex)
-    static constexpr int baseW = 760;
-    static constexpr int baseH = 958;
+    // repere du fond (pedale plein cadre, image 1235 x 1800 px / 2). Hauteurs de fenetre des pedales simples :
+    // taille par defaut = taille minimale 493 px (« 60 % »), 100 % = 958 px, jusqu'a 150 %.
+    static constexpr float baseW = layout::frameW;
+    static constexpr float baseH = layout::frameH;
     static constexpr int defaultH = 493;
-
-    void setScaledHeight (int h);
+    static constexpr int refH = 958;
+    static constexpr int maxH = refH * 3 / 2;
     static constexpr int numSizes = 3;          // 60 % (defaut d'origine) / 75 % / 100 %
     static int sizeHeight (int idx);
+
+    void setScaledHeight (int h);
+    void forceRenderScale (float sc) { forcedScale = sc; rebuildCaches (sc); }   // captures (outil de rendu)
     void showStatus();
 
 private:
@@ -145,11 +150,15 @@ private:
     PipelineAudioProcessor& proc;
     PipelineLookAndFeel lnf;
 
-    juce::Image background, bgScaled, glowLed, glowLedS;
-    // potards moletes de Holyverb : filmstrip 8 phases du moletage (lumiere fixe en haut a gauche), copies a l'echelle
-    juce::Image knobStrip, knobBig, knobSmall;
-    // etiquettes du selecteur allumees en bleu (ecriture LED) : 8 images empilees, fondu a l'allumage / extinction
-    juce::Image labelStrip, labelStripS;
+    juce::Image background, controls, bgScaled, glowLed, glowLedS, ledOn;
+    // serigraphie vectorielle (textes, graduations, filets, cadre), logo et vagues : cuits dans le cache a la resolution physique
+    std::unique_ptr<juce::Drawable> logo, waves;
+    juce::Path printPath, framePath, labelPath[8];
+    juce::Rectangle<float> labelBox[8];
+    void buildPrint();
+    void drawVectorLayer (juce::Graphics&);
+    float forcedScale = 0.0f;
+    // etiquettes du selecteur allumees en bleu (ecriture LED), fondu a l'allumage / extinction
     float labelLit[8] {}, drawnLabel[8] { -1, -1, -1, -1, -1, -1, -1, -1 };
     void drawModeLabels (juce::Graphics&);
     int cacheW = 0, cacheH = 0;
@@ -157,7 +166,7 @@ private:
     int resizeSettle = 0;
     void* lastPeer = nullptr;
     double lastPaintMs = 0.0, repaintAskedMs = 0.0, lastScaleCheckMs = 0.0, lastRendererCheckMs = 0.0;
-    juce::Typeface::Ptr labelFace, boldFace;
+    juce::Typeface::Ptr labelFace, boldFace, pMedium, pBold, pLight;
 
     PedalKnob rateKnob, depthKnob;
     ModeKnob modeKnob;

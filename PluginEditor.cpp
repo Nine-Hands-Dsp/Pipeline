@@ -7,36 +7,29 @@ using namespace juce;
 
 namespace
 {
-    // positions dans le repere 760 x 958 (fond 1520 x 1916), generees par tools/make_background.py dans Layout.h
-    const float knobHalf = layout::knobSkirt + 6.0f;
-    const float modeHalf = layout::modeSkirt * 1.24f + 4.0f;
+    // positions dans le repere du plugin 617,5 x 900 unites (fond 1235 x 1800 / 2), generees par tools/make_art.py dans Layout.h
+    const float knobHalf = layout::knobR + 6.0f;
+    const float modeHalf = layout::modeR + 4.0f;
     const Rectangle<float> statusRect = layout::rowRect;
     // ligne du haut de l'ecran : texte a gauche, oscilloscope de la modulation a droite
-    // courbe plus courte : meme extremite droite (90 % de la ligne), debut ramene vers la droite
-    const Rectangle<float> textRect  = statusRect.withWidth (statusRect.getWidth() * 0.58f).withTrimmedLeft (14.0f);
+    const Rectangle<float> textRect  = statusRect.withWidth (statusRect.getWidth() * 0.58f).withTrimmedLeft (13.0f);
     const Rectangle<float> scopeRect = statusRect.withX (statusRect.getX() + statusRect.getWidth() * 0.60f)
-                                                 .withWidth (statusRect.getWidth() * 0.30f).reduced (8.0f, 9.0f);
+                                                 .withWidth (statusRect.getWidth() * 0.30f).reduced (7.5f, 8.5f);
     const Rectangle<float> presetRect = layout::barRect;
-    const Rectangle<float> footRect (layout::footPos.x - 60.0f, layout::footPos.y - 62.0f, 120.0f, 124.0f);
+    const Rectangle<float> footRect (layout::footPos.x - layout::fsS * 0.5f, layout::footPos.y - layout::fsS * 0.5f, layout::fsS, layout::fsS);
 
     const float rotStart = -150.0f, rotEnd = 150.0f;    // degres, 0 = midi (repere vers le haut)
     float knobAngle (float v) { return degreesToRadians (rotStart + (rotEnd - rotStart) * jlimit (0.0f, 10.0f, v) / 10.0f); }
     float modeAngle (int p)   { return degreesToRadians (layout::modeFirstDeg + layout::modeStepDeg * (float) jlimit (0, 7, p)); }
 
-    const Colour inkWhite (0xffd8dad9), lcd (0xff8ccdef);       // couleurs des textes de l'ecran du visuel
+    const Colour inkWhite (0xffd8dad9), lcd (0xff8ccdef);       // couleurs des textes de l'ecran
+    const Colour inkCream (0xffefe4ca);
+    const Colour ledBlue (0xff1e87ff), ledCore (0xff55b9ff);    // couleur de la LED allumee (photo recoloree)                         // serigraphie (meme creme que l'ecume des vagues)
 
     const char* const valueIds[] = { "rate", "depth", "mode", "sync", "active", "flexi" };
     constexpr int numValueIds = 6;
 
     Rectangle<float> square (Point<float> c, float half) { return { c.x - half, c.y - half, half * 2.0f, half * 2.0f }; }
-
-    // potard Holyverb : image de 300 px pour 150 unites, rayon exterieur du moletage 61,45 unites (ombre comprise dans l'image)
-    constexpr float stripKnobR = 61.45f / 75.0f;     // rayon du moletage / demi-cote de l'image
-    constexpr int   stripFrames = 8, knurlTeeth = 76;
-    float spriteHalf (float knobR) { return knobR / stripKnobR; }
-    const float rateR = layout::knobSkirt * 1.02f;   // potards RATE / DEPTH (taille des potards du visuel)
-    const float modeR = layout::modeSkirt * 1.24f;   // selecteur MODE (agrandi)
-
 }
 
 //==============================================================================
@@ -218,16 +211,24 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
       foot (*p.apvts.getParameter ("active"), p.apvts.getRawParameterValue ("flexi"))
 {
     setLookAndFeel (&lnf);
-    background = ImageCache::getFromMemory (BinaryData::background_jpg, BinaryData::background_jpgSize);
+    background = ImageCache::getFromMemory (BinaryData::background_png, BinaryData::background_pngSize);
+    controls   = ImageCache::getFromMemory (BinaryData::controls_png, BinaryData::controls_pngSize);
     glowLed    = ImageCache::getFromMemory (BinaryData::glow_led_png, BinaryData::glow_led_pngSize);
-    knobStrip  = ImageCache::getFromMemory (BinaryData::knob_strip_png, BinaryData::knob_strip_pngSize);
-    labelStrip = ImageCache::getFromMemory (BinaryData::mode_labels_png, BinaryData::mode_labels_pngSize);
+    ledOn      = ImageCache::getFromMemory (BinaryData::led_on_png, BinaryData::led_on_pngSize);
+    if (auto xml = XmlDocument::parse (String::fromUTF8 (BinaryData::NineHandsLogo_svg, BinaryData::NineHandsLogo_svgSize)))
+        logo = Drawable::createFromSVG (*xml);
+    if (auto xml = XmlDocument::parse (String::fromUTF8 (BinaryData::PipelineWaves_svg, BinaryData::PipelineWaves_svgSize)))
+        waves = Drawable::createFromSVG (*xml);
     {
         const int p0 = jlimit (0, 7, roundToInt (proc.raw ("mode")));
         labelLit[p0] = 1.0f;
     }
     labelFace = Typeface::createSystemTypefaceFor (BinaryData::BarlowCondensedSemiBold_ttf, BinaryData::BarlowCondensedSemiBold_ttfSize);
     boldFace  = Typeface::createSystemTypefaceFor (BinaryData::BarlowCondensedBold_ttf, BinaryData::BarlowCondensedBold_ttfSize);
+    pMedium   = Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+    pBold     = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
+    pLight    = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
+    buildPrint();
 
     auto edited = [this] { proc.currentPreset = -1; };
     // index des commandes = learnDef du processeur (0 Rate, 1 Depth, 2 Mode, 3 Sync, 4 footswitch)
@@ -246,9 +247,9 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
     ledLevel = proc.raw ("active") > 0.5f ? 1.0f : 0.0f;
 
     // taille par defaut = taille minimale (impossible de reduire en dessous), proportions bloquees
-    const int defaultW = roundToInt ((float) defaultH * (float) baseW / (float) baseH);
+    const int defaultW = roundToInt ((float) defaultH * baseW / baseH);
     setResizable (true, true);
-    setResizeLimits (defaultW, defaultH, baseW * 3 / 2, baseH * 3 / 2);
+    setResizeLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
     if (auto* cons = getConstrainer())
         cons->setFixedAspectRatio ((double) baseW / (double) baseH);
     setOpaque (true);
@@ -264,24 +265,25 @@ PipelineAudioProcessorEditor::~PipelineAudioProcessorEditor() { stopTimer(); set
 //==============================================================================
 int PipelineAudioProcessorEditor::sizeHeight (int idx)
 {
-    const int h[numSizes] = { (int) defaultH, roundToInt (baseH * 0.75f), (int) baseH };
+    const int h[numSizes] = { (int) defaultH, roundToInt (refH * 0.75f), (int) refH };
     return h[jlimit (0, numSizes - 1, idx)];
 }
 
 void PipelineAudioProcessorEditor::setScaledHeight (int h)
 {
-    h = jmax ((int) defaultH, h);
-    setSize (roundToInt ((float) h * (float) baseW / (float) baseH), h);
+    h = jlimit ((int) defaultH, (int) maxH, h);
+    setSize (roundToInt ((float) h * baseW / baseH), h);
 }
 
 Rectangle<int> PipelineAudioProcessorEditor::scaled (Rectangle<float> r) const
 {
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     return r.transformedBy (AffineTransform::scale (s)).getSmallestIntegerContainer();
 }
 
 float PipelineAudioProcessorEditor::physicalScale() const
 {
+    if (forcedScale > 0.0f) return forcedScale;
     return jlimit (1.0f, 4.0f, (float) Component::getApproximateScaleFactorForComponent (this));
 }
 
@@ -298,23 +300,22 @@ void PipelineAudioProcessorEditor::rebuildCaches (float sc)
     if (w == cacheW && h == cacheH && std::abs (sc - cacheScale) < 0.01f && bgScaled.isValid()) return;
     cacheW = w; cacheH = h; cacheScale = sc;
 
+    // fond a la resolution physique de l'ecran, puis couche vectorielle (vagues, serigraphie, logo) dessinee par-dessus :
+    // nette a toutes les tailles (Retina / 4K), calculee ici une fois (timer), jamais dans paint()
     const int pw = roundToInt ((float) w * sc), ph = roundToInt ((float) h * sc);
-    bgScaled = (pw >= background.getWidth()) ? background : background.rescaled (pw, ph, Graphics::highResamplingQuality);
+    Image composed (Image::ARGB, pw, ph, true);
+    {
+        Graphics g (composed);
+        g.setImageResamplingQuality (Graphics::highResamplingQuality);
+        g.drawImage (background, Rectangle<float> (0.0f, 0.0f, (float) pw, (float) ph));
+        g.addTransform (AffineTransform::scale ((float) ph / baseH));
+        drawVectorLayer (g);
+    }
+    bgScaled = composed;
 
-    const float s = (float) h / (float) baseH;
+    const float s = (float) h / baseH;
     const int tw = roundToInt (layout::glowRect.getWidth() * s * sc), th = roundToInt (layout::glowRect.getHeight() * s * sc);
     glowLedS = (tw >= glowLed.getWidth()) ? glowLed : glowLed.rescaled (tw, th, Graphics::highResamplingQuality);
-    auto stripAt = [this, s, sc] (float knobR)
-    {
-        const int px = roundToInt (spriteHalf (knobR) * 2.0f * s * sc);
-        return (px <= 0 || px >= knobStrip.getWidth()) ? Image() : knobStrip.rescaled (px, px * stripFrames, Graphics::highResamplingQuality);
-    };
-    knobBig = stripAt (rateR);
-    knobSmall = stripAt (modeR);
-    {
-        const int lw = roundToInt (layout::labelW * s * sc), lh = roundToInt (layout::labelH * s * sc);
-        labelStripS = (lw <= 0 || lw >= labelStrip.getWidth()) ? Image() : labelStrip.rescaled (lw, lh * 8, Graphics::highResamplingQuality);
-    }
     repaint();
 }
 
@@ -324,7 +325,7 @@ void PipelineAudioProcessorEditor::resized()
     rateKnob.setBounds  (scaled (square (layout::ratePos,  knobHalf)));
     depthKnob.setBounds (scaled (square (layout::depthPos, knobHalf)));
     modeKnob.setBounds  (scaled (square (layout::modePos,  modeHalf)));
-    foot.setBounds (scaled (square (layout::footPos, layout::footR)));
+    foot.setBounds (scaled (square (layout::footPos, layout::footHit)));
     resizeSettle = 4;
 }
 
@@ -447,9 +448,9 @@ void PipelineAudioProcessorEditor::timerCallback()
         if (std::abs (knobs[k]->getValue() - drawnKnob[k]) > 0.002f)
         {
             drawnKnob[k] = knobs[k]->getValue();
-            askRepaint (scaled (square (kc[k], spriteHalf (rateR) + 2.0f)));
+            askRepaint (scaled (square (kc[k], layout::knobR + 2.0f)));
         }
-    if (modeKnob.tick()) askRepaint (scaled (square (layout::modePos, spriteHalf (modeR) + 2.0f)));
+    if (modeKnob.tick()) askRepaint (scaled (square (layout::modePos, layout::modeR + 2.0f)));
     // etiquette du mode choisi : s'allume en bleu (fondu 0,35 a l'allumage, 0,22 a l'extinction, par image a 30 Hz)
     for (int i = 0; i < 8; ++i)
     {
@@ -460,7 +461,7 @@ void PipelineAudioProcessorEditor::timerCallback()
         if (std::abs (labelLit[i] - drawnLabel[i]) > 0.003f)
         {
             drawnLabel[i] = labelLit[i];
-            askRepaint (scaled (Rectangle<float> (layout::labelW, layout::labelH).withCentre (layout::labelPos[i])));
+            askRepaint (scaled (labelBox[i].expanded (5.0f)));
         }
     }
 
@@ -553,74 +554,152 @@ void PipelineAudioProcessorEditor::timerCallback()
 //==============================================================================
 void PipelineAudioProcessorEditor::drawLed (Graphics& g)
 {
-    // la facade recoit la lumiere de la LED : calque precalcule (fond x eclairement x couleur), avec canal alpha
-    if (ledLevel > 0.003f && glowLedS.isValid())
+    // la facade recoit la lumiere de la LED : calque precalcule (fond x eclairement x couleur), avec canal alpha ;
+    // puis la lentille allumee (photo de la LED a facettes, recoloree en bleu) en fondu
+    if (ledLevel > 0.003f)
     {
         g.setOpacity (ledLevel);
-        g.drawImage (glowLedS, layout::glowRect);
+        if (glowLedS.isValid()) g.drawImage (glowLedS, layout::glowRect);
+        if (ledOn.isValid())    g.drawImage (ledOn, square (layout::ledPos, layout::ledS * 0.5f));
         g.setOpacity (1.0f);
     }
 }
 
-// potards de Holyverb : le moletage tourne (8 phases : il a 76 dents, la periode est de 4,7 degres),
-// l'index blanc et le point sont dessines a l'angle exact ; reflets et ombre fixes (lumiere en haut a gauche)
+//==============================================================================
+// Serigraphie vectorielle : construite une fois en chemins (unites du plugin)
+//==============================================================================
+void PipelineAudioProcessorEditor::buildPrint()
+{
+    printPath.clear();
+    int idx = 0;
+    for (const auto& t : layout::texts)
+    {
+        const Typeface::Ptr face = t.font == 1 ? pBold : (t.font == 2 ? pLight : pMedium);
+        const Font font (FontOptions (face).withPointHeight (t.em));
+        const String str (t.s);
+        float total = 0.0f;
+        for (int i = 0; i < str.length(); ++i)
+            total += GlyphArrangement::getStringWidth (font, String::charToString (str[i])) + (i > 0 ? t.track : 0.0f);
+        const float base = (font.getAscent() - font.getDescent()) * 0.5f;     // centre vertical entre ascendante et descendante
+        GlyphArrangement ga;
+        float x = -total * 0.5f;
+        for (int i = 0; i < str.length(); ++i)
+        {
+            const String ch = String::charToString (str[i]);
+            ga.addLineOfText (font, ch, x, base);
+            x += GlyphArrangement::getStringWidth (font, ch) + t.track;
+        }
+        Path p; ga.createPath (p);
+        p.applyTransform (AffineTransform::rotation (-t.rot * MathConstants<float>::pi / 180.0f).translated (t.x, t.y));
+        const int li = idx - layout::modeLabelFirst;
+        if (li >= 0 && li < 8) { labelPath[li] = p; labelBox[li] = p.getBounds(); }
+        printPath.addPath (p);
+        ++idx;
+    }
+    for (const auto& k : layout::ticks)
+    {
+        Path l; l.startNewSubPath (k.x0, k.y0); l.lineTo (k.x1, k.y1);
+        PathStrokeType (k.w, PathStrokeType::curved, PathStrokeType::rounded).createStrokedPath (l, l);
+        printPath.addPath (l);
+    }
+    for (const auto& v : layout::wavy)
+    {
+        Path l;
+        const int n = 80;
+        for (int i = 0; i <= n; ++i)
+        {
+            const float u = (float) i / (float) n;
+            const float x = v.x0 + (v.x1 - v.x0) * u;
+            const float y = v.y - v.amp * std::sin (MathConstants<float>::twoPi * v.periods * u);
+            if (i == 0) l.startNewSubPath (x, y); else l.lineTo (x, y);
+        }
+        PathStrokeType (v.w, PathStrokeType::curved, PathStrokeType::rounded).createStrokedPath (l, l);
+        printPath.addPath (l);
+    }
+    framePath.clear();
+    framePath.addRoundedRectangle (layout::faceRect, layout::faceR);
+}
+
+// couche cuite dans le cache : vagues (hors commandes et ecran), cadre interieur, serigraphie, logo
+void PipelineAudioProcessorEditor::drawVectorLayer (Graphics& g)
+{
+    if (waves != nullptr)
+    {
+        Graphics::ScopedSaveState ss (g);
+        Path clip;
+        clip.addRoundedRectangle (layout::faceRect, layout::faceR);
+        g.reduceClipRegion (clip);
+        waves->draw (g, 1.0f, AffineTransform::scale (layout::waveA, layout::waveC).translated (layout::waveB, layout::waveD));
+    }
+    g.setColour (inkCream.withAlpha (0.9f));
+    g.strokePath (framePath, PathStrokeType (layout::faceLineW));
+    g.setColour (inkCream);
+    g.fillPath (printPath);
+    if (logo != nullptr)
+    {
+        const auto vb = logo->getDrawableBounds();
+        const float w = layout::logoW, h = w * vb.getHeight() / jmax (1.0f, vb.getWidth());
+        logo->drawWithin (g, { layout::logoPos.x - w * 0.5f, layout::logoPos.y - h * 0.5f, w, h }, RectanglePlacement::centred, 0.95f);
+    }
+    // commandes (potards, LED eteinte, footswitch, jacks) et leurs ombres, au-dessus de la serigraphie et des vagues
+    if (controls.isValid())
+    {
+        g.setOpacity (1.0f);                          // drawImage prend l'opacite de la couleur courante
+        g.setImageResamplingQuality (Graphics::highResamplingQuality);
+        g.drawImage (controls, Rectangle<float> (0.0f, 0.0f, baseW, baseH));
+    }
+    // barre de presets : filet fin (sur le verre de l'ecran, qui fait partie du calque des commandes)
+    g.setColour (inkWhite.withAlpha (0.28f));
+    g.drawRoundedRectangle (presetRect.reduced (0.5f), 4.0f, 1.0f);
+}
+
+// etiquette du mode choisi : ecriture LED bleue (halo doux + trait clair), en fondu
 void PipelineAudioProcessorEditor::drawModeLabels (Graphics& g)
 {
-    const Image& img = labelStripS.isValid() ? labelStripS : labelStrip;
-    if (! img.isValid()) return;
-    const int fw = img.getWidth(), fh = img.getHeight() / 8;
-    g.setImageResamplingQuality (labelStripS.isValid() ? Graphics::mediumResamplingQuality : Graphics::highResamplingQuality);
     for (int i = 0; i < 8; ++i)
         if (labelLit[i] > 0.003f)
         {
-            g.setOpacity (labelLit[i]);
-            g.drawImage (img.getClippedImage ({ 0, i * fh, fw, fh }),
-                         Rectangle<float> (layout::labelW, layout::labelH).withCentre (layout::labelPos[i]));
+            const float a = labelLit[i];
+            // meme bleu que la LED allumee : halo doux, corps sature, coeur plus clair
+            g.setColour (ledBlue.withAlpha (0.12f * a));
+            for (float r : { 3.0f, 1.8f })
+                g.strokePath (labelPath[i], PathStrokeType (r, PathStrokeType::curved, PathStrokeType::rounded));
+            g.setColour (ledBlue.withAlpha (a));
+            g.fillPath (labelPath[i]);
+            g.setColour (ledCore.withAlpha (0.35f * a));
+            g.fillPath (labelPath[i], AffineTransform::translation (-0.25f, -0.25f));
         }
-    g.setOpacity (1.0f);
 }
 
+// potards moletes (photo du kit) : le corps, ses reflets et son ombre font partie du fond ;
+// seuls le repere blanc du chapeau et le point blanc du moletage sont dessines, a l'angle exact
 void PipelineAudioProcessorEditor::drawKnobs (Graphics& g)
 {
-    struct K { Point<float> c; float r, angle; const Image* img; bool dot; };
-    const K ks[3] = { { layout::ratePos,  rateR, knobAngle (rateKnob.getValue()),  &knobBig,   true },
-                      { layout::depthPos, rateR, knobAngle (depthKnob.getValue()), &knobBig,   true },
-                      { layout::modePos,  modeR, modeKnob.getShownAngle(),         &knobSmall, false } };
+    struct K { Point<float> c; float r, angle; bool dot; };
+    const K ks[3] = { { layout::ratePos,  layout::knobR, knobAngle (rateKnob.getValue()),  true },
+                      { layout::depthPos, layout::knobR, knobAngle (depthKnob.getValue()), true },
+                      { layout::modePos,  layout::modeR, modeKnob.getShownAngle(),         false } };
     for (const auto& k : ks)
     {
-        const Image& img = k.img->isValid() ? *k.img : knobStrip;
-        if (! img.isValid()) continue;
-        const float period = MathConstants<float>::twoPi / (float) knurlTeeth;
-        float ph = std::fmod (k.angle, period);
-        if (ph < 0.0f) ph += period;
-        const int frame = jlimit (0, stripFrames - 1, (int) (ph / period * (float) stripFrames));
-        const int fs = img.getWidth();
-        const float half = spriteHalf (k.r);
-        // l'image a l'echelle est dessinee pixel pour pixel (transformation inverse de l'echelle de la fenetre)
-        g.setImageResamplingQuality (k.img->isValid() ? Graphics::mediumResamplingQuality : Graphics::highResamplingQuality);
-        const auto frameImg = img.getClippedImage ({ 0, frame * fs, fs, fs });
-        g.drawImage (frameImg, Rectangle<float> (k.c.x - half, k.c.y - half, half * 2.0f, half * 2.0f));
-
-        // index blanc + point (comme Holyverb), ombre fine vers le bas a droite
         const float R = k.r;
         const float ux = std::sin (k.angle), uy = -std::cos (k.angle);
         Path line;
-        line.startNewSubPath (k.c.x + ux * R * 0.10f, k.c.y + uy * R * 0.10f);
-        line.lineTo          (k.c.x + ux * R * (k.dot ? 0.60f : 0.66f), k.c.y + uy * R * (k.dot ? 0.60f : 0.66f));
-        const PathStrokeType stroke (R * (k.dot ? 0.056f : 0.07f), PathStrokeType::curved, PathStrokeType::rounded);
-        g.setColour (Colours::black.withAlpha (0.45f));
-        g.strokePath (line, stroke, AffineTransform::translation (R * 0.012f, R * 0.018f));
-        g.setGradientFill (ColourGradient (Colour (0xfff7f7f9), k.c.x - R * 0.4f, k.c.y - R * 0.4f,
-                                           Colour (0xffc9c9cd), k.c.x + R * 0.4f, k.c.y + R * 0.4f, false));
+        line.startNewSubPath (k.c.x + ux * R * layout::idxR0, k.c.y + uy * R * layout::idxR0);
+        line.lineTo          (k.c.x + ux * R * layout::idxR1, k.c.y + uy * R * layout::idxR1);
+        const PathStrokeType stroke (R * layout::idxHalfW * 2.0f, PathStrokeType::curved, PathStrokeType::butt);
+        g.setColour (Colours::black.withAlpha (0.40f));
+        g.strokePath (line, stroke, AffineTransform::translation (R * 0.010f, R * 0.015f));
+        g.setGradientFill (ColourGradient (Colour (0xfff6f6f8), k.c.x - R * 0.4f, k.c.y - R * 0.4f,
+                                           Colour (0xffcfcfd3), k.c.x + R * 0.4f, k.c.y + R * 0.4f, false));
         g.strokePath (line, stroke);
         if (k.dot)
         {
-            const Point<float> d (k.c.x + ux * R * 0.845f, k.c.y + uy * R * 0.845f);
-            const float dr = R * 0.042f;
+            const Point<float> d (k.c.x + ux * R * layout::dotR, k.c.y + uy * R * layout::dotR);
+            const float dr = R * layout::dotSize;
             g.setColour (Colours::black.withAlpha (0.5f));
             g.fillEllipse (d.x - dr + R * 0.01f, d.y - dr + R * 0.015f, dr * 2.0f, dr * 2.0f);
             g.setGradientFill (ColourGradient (Colours::white, d.x - dr * 0.4f, d.y - dr * 0.5f,
-                                               Colour (0xffbdbdc2), d.x + dr, d.y + dr, true));
+                                               Colour (0xffc2c2c6), d.x + dr, d.y + dr, true));
             g.fillEllipse (d.x - dr, d.y - dr, dr * 2.0f, dr * 2.0f);
         }
     }
@@ -629,9 +708,9 @@ void PipelineAudioProcessorEditor::drawKnobs (Graphics& g)
 void PipelineAudioProcessorEditor::drawFootswitch (Graphics& g)
 {
     if (! foot.isPressed()) return;
-    // bouton assombri tant qu'on appuie (comportement Echoflex) : disque noir 25 %, rayon footR x 0,54, bord adouci
+    // bouton assombri tant qu'on appuie (comportement Echoflex)
     const auto c = layout::footPos;
-    const float r = layout::footR * 1.02f;          // bouton + bague moletee assombris quand on appuie
+    const float r = layout::footR * 1.02f;
     ColourGradient shade (Colours::black.withAlpha (0.40f), c.x, c.y, Colours::black.withAlpha (0.0f), c.x + r, c.y, true);
     shade.addColour (0.88, Colours::black.withAlpha (0.36f));
     g.setGradientFill (shade);
@@ -755,7 +834,7 @@ Font PipelineAudioProcessorEditor::presetFont (float availW)
     if (presetFontAvail != availW)
     {
         presetFontAvail = availW;
-        float h = 28.0f;
+        float h = 26.5f;
         for (; h > 14.0f; h -= 0.5f)
         {
             const Font f = Font (FontOptions (labelFace).withHeight (h)).withExtraKerningFactor (0.03f);
@@ -783,7 +862,7 @@ void PipelineAudioProcessorEditor::drawDisplay (Graphics& g)
         g.setColour (lcd.withAlpha (alpha));
         g.drawFittedText (t, sr, Justification::centredLeft, 1, 0.62f);
     };
-    const Font big (FontOptions (boldFace).withHeight (25.0f));
+    const Font big (FontOptions (boldFace).withHeight (23.5f));
     drawScope (g, scopeRect);
     if (a < 0.999f) glowText (lastInfo, big.withExtraKerningFactor (0.05f), 0.92f * (1.0f - a));
     if (a > 0.0f)   glowText (lastLine1, big.withExtraKerningFactor (0.05f), a);
@@ -795,12 +874,12 @@ void PipelineAudioProcessorEditor::drawDisplay (Graphics& g)
         g.setColour (Colours::white.withAlpha (0.05f));
         g.fillRoundedRectangle (r.reduced (1.5f), 4.0f);
     }
-    const float aw = 30.0f;
+    const float aw = 28.0f;
     auto arrow = [&] (Rectangle<float> ar, bool left, bool hot)
     {
         Path p;
         const auto c = ar.getCentre();
-        const float s = 4.6f;
+        const float s = 4.3f;
         if (left) p.addTriangle (c.x + s * 0.6f, c.y - s, c.x + s * 0.6f, c.y + s, c.x - s * 0.8f, c.y);
         else      p.addTriangle (c.x - s * 0.6f, c.y - s, c.x - s * 0.6f, c.y + s, c.x + s * 0.8f, c.y);
         g.setColour (inkWhite.withAlpha (hot ? 1.0f : 0.72f));
@@ -819,12 +898,14 @@ void PipelineAudioProcessorEditor::paint (Graphics& g)
 {
     lastPaintMs = Time::getMillisecondCounterHiRes();
     repaintAskedMs = 0.0;
-    g.fillAll (Colours::black);
+    g.fillAll (Colour (0xff111112));          // autour des jacks : le fond de l'image est transparent
+    // anti-gel : aucun rescale ici, on dessine le cache existant (ou l'original en attendant le timer)
     const Image& bg = bgScaled.isValid() ? bgScaled : background;
     g.setImageResamplingQuality (&bg == &background ? Graphics::highResamplingQuality : Graphics::lowResamplingQuality);
     if (bg.isValid()) g.drawImage (bg, getLocalBounds().toFloat());
+    if (! bgScaled.isValid() && controls.isValid()) g.drawImage (controls, getLocalBounds().toFloat());
 
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     g.addTransform (AffineTransform::scale (s));
     drawLed (g);
     drawModeLabels (g);
@@ -839,25 +920,21 @@ void PipelineAudioProcessorEditor::paint (Graphics& g)
 static int presetZoneAt (Point<float> p)
 {
     if (! presetRect.contains (p)) return 0;
-    if (p.x < presetRect.getX() + 30.0f) return 1;
-    if (p.x > presetRect.getRight() - 30.0f) return 3;
+    if (p.x < presetRect.getX() + 28.0f) return 1;
+    if (p.x > presetRect.getRight() - 28.0f) return 3;
     return 2;
 }
 
 int PipelineAudioProcessorEditor::modeLabelAt (Point<float> u) const
 {
-    // etiquettes du selecteur, sur un cercle de ~72 unites autour de son axe
-    const float d = u.getDistanceFrom (layout::modePos);
-    if (d < layout::modeSkirt + 6.0f || d > layout::modeSkirt + 62.0f) return -1;
-    const float a = radiansToDegrees (std::atan2 (u.x - layout::modePos.x, -(u.y - layout::modePos.y)));
-    const int k = roundToInt ((a - layout::modeFirstDeg) / layout::modeStepDeg);
-    if (k < 0 || k > 7) return -1;
-    return std::abs (a - (layout::modeFirstDeg + layout::modeStepDeg * (float) k)) < layout::modeStepDeg * 0.45f ? k : -1;
+    for (int i = 0; i < 8; ++i)
+        if (labelBox[i].expanded (6.0f, 5.0f).contains (u)) return i;
+    return -1;
 }
 
 void PipelineAudioProcessorEditor::mouseMove (const MouseEvent& e)
 {
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     const auto u = e.position / s;
     hoverZone = presetZoneAt (u);
     setMouseCursor (hoverZone != 0 || modeLabelAt (u) >= 0 ? MouseCursor::PointingHandCursor : MouseCursor::NormalCursor);
@@ -868,7 +945,7 @@ void PipelineAudioProcessorEditor::mouseExit (const MouseEvent&) { hoverZone = 0
 void PipelineAudioProcessorEditor::mouseDown (const MouseEvent& e)
 {
     if (e.mods.isPopupMenu()) { showContextMenu(); return; }
-    const float s = (float) getHeight() / (float) baseH;
+    const float s = (float) getHeight() / baseH;
     const auto u = e.position / s;
     const int lbl = modeLabelAt (u);
     if (lbl >= 0) { modeKnob.moveTo (lbl); return; }
@@ -943,19 +1020,18 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
     PopupMenu menu, sizes;
     addMidiMenu (menu, learnIdx);
     {
-        // Plugin size : taille de cette fenetre + taille par defaut des nouvelles fenetres (comme Octopus)
         const char* names[numSizes] = { "60 %", "75 %", "100 %" };
         const int def = WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes);
         PopupMenu defSizes;
         for (int i = 0; i < numSizes; ++i)
         {
             sizes.addItem (1 + i, String (names[i]) + (i == def ? "  (default)" : ""), true, std::abs (getHeight() - sizeHeight (i)) <= 2);
-            defSizes.addItem (20 + i, names[i], true, i == def);
+            defSizes.addItem (60 + i, names[i], true, def == i);
         }
         sizes.addSeparator();
         sizes.addSubMenu ("Default size (new windows)", defSizes);
-        menu.addSubMenu ("Plugin size", sizes);
     }
+    menu.addSubMenu ("Plugin size", sizes);
     menu.addSeparator();
 
     PopupMenu factory;
@@ -1009,11 +1085,11 @@ void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
             if (safe == nullptr || r == 0) return;
             auto& ed = *safe;
             auto& pr = ed.proc;
-            if      (r >= 1 && r < 1 + numSizes) ed.setScaledHeight (ed.sizeHeight (r - 1));
-            else if (r >= 20 && r < 20 + numSizes)
+            if      (r >= 1 && r <= numSizes) ed.setScaledHeight (sizeHeight (r - 1));
+            else if (r >= 60 && r < 60 + numSizes)
             {
-                WigaWindowSize::setDefaultIndex (JucePlugin_Name, r - 20);   // toutes les nouvelles fenetres de ce plugin
-                ed.setScaledHeight (ed.sizeHeight (r - 20));                // et cette fenetre tout de suite
+                WigaWindowSize::setDefaultIndex (JucePlugin_Name, r - 60);   // toutes les nouvelles fenetres de ce plugin
+                ed.setScaledHeight (sizeHeight (r - 60));                    // et cette fenetre tout de suite
             }
             else if (r == 40) { pr.setParamValue ("sync", pr.raw ("sync") > 0.5f ? 0.0f : 1.0f); }
             else if (r == 41) pr.setParamValue ("midiFsMode", 0.0f);

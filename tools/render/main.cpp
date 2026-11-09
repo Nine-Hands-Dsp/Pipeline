@@ -31,6 +31,7 @@ int main (int argc, char** argv)
     proc.prepareToPlay (48000.0, 256);
     std::unique_ptr<AudioProcessorEditor> ed (proc.createEditor());
     auto* ped = static_cast<PipelineAudioProcessorEditor*> (ed.get());
+    ped->forceRenderScale (2.0f);
     std::printf ("taille par defaut : %d x %d\n", ed->getWidth(), ed->getHeight());
 
     auto pump = [] (int n) { for (int i = 0; i < n; ++i) MessageManager::getInstance()->runDispatchLoopUntil (35); };
@@ -65,15 +66,15 @@ int main (int argc, char** argv)
         save (name);
     };
     shot ("pipeline_default", 0, true,  0.0f,   0.0f, PipelineAudioProcessorEditor::defaultH);
-    shot ("pipeline_longname", 1, true, 0.0f,   0.0f, PipelineAudioProcessorEditor::baseH);
+    shot ("pipeline_longname", 1, true, 0.0f,   0.0f, PipelineAudioProcessorEditor::refH);
     shot ("pipeline_longname60", 1, true, 0.0f, 0.0f, PipelineAudioProcessorEditor::defaultH);
-    shot ("pipeline_full",    0, true,  196.0f, 1.2f, PipelineAudioProcessorEditor::baseH);
-    shot ("pipeline_envp",    12, true, 110.0f, 0.15f, PipelineAudioProcessorEditor::baseH);
-    shot ("pipeline_status",  6, true,  0.0f,   0.0f, PipelineAudioProcessorEditor::baseH, "rate", 7.2f);
-    shot ("pipeline_mix",     13, true, 0.0f,   0.0f, PipelineAudioProcessorEditor::baseH, "depth", 5.0f);
-    shot ("pipeline_bypass",  9, false, 0.0f,   0.0f, PipelineAudioProcessorEditor::baseH);
+    shot ("pipeline_full",    0, true,  196.0f, 1.2f, PipelineAudioProcessorEditor::refH);
+    shot ("pipeline_envp",    12, true, 110.0f, 0.15f, PipelineAudioProcessorEditor::refH);
+    shot ("pipeline_status",  6, true,  0.0f,   0.0f, PipelineAudioProcessorEditor::refH, "rate", 7.2f);
+    shot ("pipeline_mix",     13, true, 0.0f,   0.0f, PipelineAudioProcessorEditor::refH, "depth", 5.0f);
+    shot ("pipeline_bypass",  9, false, 0.0f,   0.0f, PipelineAudioProcessorEditor::refH);
     proc.setParamValue ("sync", 1.0f);
-    shot ("pipeline_sync",    2, true,  0.0f,   0.0f, PipelineAudioProcessorEditor::baseH, "rate", 6.6f);
+    shot ("pipeline_sync",    2, true,  0.0f,   0.0f, PipelineAudioProcessorEditor::refH, "rate", 6.6f);
     proc.setParamValue ("sync", 0.0f);
 
     // footswitch : Flexi-Switch (appui maintenu > 0,45 s alors que l'effet etait coupe = momentane)
@@ -99,7 +100,7 @@ int main (int argc, char** argv)
         std::printf ("Flexi-Switch : appui bref -> %s\n", proc.raw ("active") > 0.5f ? "ON" : "OFF (ERREUR)");
     }
 
-    // pedale d'expression : course 2..116 sur CC 20 (rate)
+    // MIDI Learn puis pedale d'expression : course 2..116 sur CC 20 (rate)
     {
         auto sendCC = [&] (int cc, int v)
         {
@@ -108,8 +109,10 @@ int main (int argc, char** argv)
             for (int k = 0; k < 20; ++k) { MidiBuffer e; b.clear(); proc.processBlock (b, e); }
             pump (3);
         };
-        // aucun CC par defaut depuis v1.5.1 : on assigne Rate = CC 20, Mode = CC 22, Footswitch = CC 24 comme un MIDI Learn
-        proc.ccMap[0].store (20); proc.ccMap[2].store (22); proc.ccMap[4].store (24);
+        // aucun CC par defaut (MIDI Learn seulement) : la verification est faite apres un apprentissage
+        std::printf ("CC par defaut : %d %d %d %d %d (attendu -1 partout)\n", proc.ccMap[0].load(), proc.ccMap[1].load(), proc.ccMap[2].load(), proc.ccMap[3].load(), proc.ccMap[4].load());
+        for (int i : { 0, 2, 4 }) { proc.learnTarget.store (i); sendCC (i == 0 ? 20 : (i == 2 ? 22 : 24), 0); }
+        proc.setParamValue ("active", 0.0f); pump (3);
         sendCC (20, 2);   const float a = proc.raw ("rate");
         sendCC (20, 116); const float c = proc.raw ("rate");
         sendCC (20, 59);  const float mid = proc.raw ("rate");
