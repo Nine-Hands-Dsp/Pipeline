@@ -208,7 +208,7 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
       rateKnob  (*p.apvts.getParameter ("rate")),
       depthKnob (*p.apvts.getParameter ("depth")),
       modeKnob  (*p.apvts.getParameter ("mode")),
-      foot (*p.apvts.getParameter ("active"), p.apvts.getRawParameterValue ("flexi"))
+      foot (*p.apvts.getParameter ("active"), nullptr)   // « Flexi-Switch : hold = momentary » retire (v1.7.0)
 {
     setLookAndFeel (&lnf);
     background = ImageCache::getFromMemory (BinaryData::background_png, BinaryData::background_pngSize);
@@ -229,7 +229,8 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
     pBold     = Typeface::createSystemTypefaceFor (BinaryData::PoppinsBold_ttf, BinaryData::PoppinsBold_ttfSize);
     pLight    = Typeface::createSystemTypefaceFor (BinaryData::PoppinsLight_ttf, BinaryData::PoppinsLight_ttfSize);
     buildPrint();
-    lnf.reg = pMedium; lnf.med = pMedium; lnf.bold = pBold;     // menus en Poppins, comme Octopus
+    lnf.f = { pMedium, pMedium, pBold };
+    glowPc = NineHandsGlow::percent (JucePlugin_Name);     // menus en Poppins, comme Octopus
 
     auto edited = [this] { proc.currentPreset = -1; };
     // index des commandes = learnDef du processeur (0 Rate, 1 Depth, 2 Mode, 3 Sync, 4 footswitch)
@@ -251,12 +252,13 @@ PipelineAudioProcessorEditor::PipelineAudioProcessorEditor (PipelineAudioProcess
     const int defaultW = roundToInt ((float) defaultH * baseW / baseH);
     setResizable (true, true);
     setResizeLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
+    hostLock.setLimits (defaultW, defaultH, roundToInt ((float) maxH * baseW / baseH), maxH);
     if (auto* cons = getConstrainer())
         cons->setFixedAspectRatio ((double) baseW / (double) baseH);
     setOpaque (true);
     setSize (defaultW, defaultH);
     // taille des nouvelles fenetres : celle choisie dans le menu « Default size (new windows) »
-    setScaledHeight (sizeHeight (WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes)));
+    setScaledHeight (sizeHeight (NineHandsWindow::openIndex (JucePlugin_Name, proc.uiSizeIdx.load(), numSizes)));   // taille du projet, sinon taille par defaut
     rebuildCaches();
     startTimerHz (30);
 }
@@ -274,6 +276,7 @@ void PipelineAudioProcessorEditor::setScaledHeight (int h)
 {
     h = jlimit ((int) defaultH, (int) maxH, h);
     setSize (roundToInt ((float) h * baseW / baseH), h);
+    hostLock.enforce();
 }
 
 Rectangle<int> PipelineAudioProcessorEditor::scaled (Rectangle<float> r) const
@@ -351,7 +354,7 @@ void PipelineAudioProcessorEditor::useSoftwareRenderer()
    #endif
 }
 
-void PipelineAudioProcessorEditor::parentHierarchyChanged() { useSoftwareRenderer(); }
+void PipelineAudioProcessorEditor::parentHierarchyChanged() { useSoftwareRenderer(); hostLock.track (*this); }
 void PipelineAudioProcessorEditor::visibilityChanged()      { useSoftwareRenderer(); if (isShowing()) repaint(); }
 
 void PipelineAudioProcessorEditor::askRepaint (Rectangle<int> r)
@@ -425,6 +428,13 @@ void PipelineAudioProcessorEditor::timerCallback()
 {
     const double now = Time::getMillisecondCounterHiRes();
     if (getPeer() != lastPeer || now - lastRendererCheckMs > 1000.0) { lastRendererCheckMs = now; useSoftwareRenderer(); }
+    if (now - lastGlowReadMs > 3000.0)       // clic droit > Glow intensity : commun a toutes les fenetres (jamais dans paint)
+    {
+        lastGlowReadMs = now;
+        const int pc = NineHandsGlow::percent (JucePlugin_Name);
+        if (pc != glowPc) setGlowPercent (pc);
+    }
+    hostLock.track (*this);
 
     if (resizeSettle > 0 && --resizeSettle == 0) rebuildCaches();
     else if (resizeSettle == 0 && now - lastScaleCheckMs > 250.0)
@@ -559,8 +569,9 @@ void PipelineAudioProcessorEditor::drawLed (Graphics& g)
     // puis la lentille allumee (photo de la LED a facettes, recoloree en bleu) en fondu
     if (ledLevel > 0.003f)
     {
-        g.setOpacity (ledLevel);
+        g.setOpacity (ledLevel * glowAmt());                       // halo : clic droit > Glow intensity
         if (glowLedS.isValid()) g.drawImage (glowLedS, layout::glowRect);
+        g.setOpacity (ledLevel);                                   // lentille : toujours pleine
         if (ledOn.isValid())    g.drawImage (ledOn, square (layout::ledPos, layout::ledS * 0.5f));
         g.setOpacity (1.0f);
     }
@@ -995,18 +1006,6 @@ void PipelineAudioProcessorEditor::showPresetMenu()
         });
 }
 
-void PipelineAudioProcessorEditor::addMidiMenu (PopupMenu& menu, int learnIdx)
-{
-    if (learnIdx < 0 || learnIdx >= PipelineAudioProcessor::numLearn)
-        return;
-    const int cc = proc.ccMap[learnIdx].load();
-    const int lt = proc.learnTarget.load();
-    const String name = PipelineAudioProcessor::learnDef (learnIdx).name;
-    menu.addItem (1000 + learnIdx, "MIDI Learn: " + name + " (" + (cc >= 0 ? "CC " + String (cc) : String ("none")) + ")", true, lt == learnIdx);
-    menu.addItem (1100 + learnIdx, "Clear MIDI: " + name, cc >= 0);
-    if (lt >= 0) menu.addItem (1200, "Cancel MIDI learn");
-    menu.addSeparator();
-}
 
 void PipelineAudioProcessorEditor::handleMidiMenu (int r)
 {
@@ -1017,88 +1016,103 @@ void PipelineAudioProcessorEditor::handleMidiMenu (int r)
     else if (r == 1201) { proc.learnTarget.store (-1); proc.resetMidiMap(); }
 }
 
-void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
+void PipelineAudioProcessorEditor::setGlowPercent (int pc)
 {
-    PopupMenu menu, sizes;
-    addMidiMenu (menu, learnIdx);
-    {
-        const char* names[numSizes] = { "60 %", "75 %", "100 %" };
-        const int def = WigaWindowSize::defaultIndex (JucePlugin_Name, numSizes);
-        PopupMenu defSizes;
-        for (int i = 0; i < numSizes; ++i)
-        {
-            sizes.addItem (1 + i, String (names[i]) + (i == def ? "  (default)" : ""), true, std::abs (getHeight() - sizeHeight (i)) <= 2);
-            defSizes.addItem (60 + i, names[i], true, def == i);
-        }
-        sizes.addSeparator();
-        sizes.addSubMenu ("Default size (new windows)", defSizes);
-    }
-    menu.addSubMenu ("Plugin size", sizes);
-    menu.addSeparator();
+    glowPc = NineHandsGlow::sanitize (pc);
+    drawnLed = -1.0f;                       // le timer redessine la LED
+}
 
+PopupMenu PipelineAudioProcessorEditor::buildContextMenu (int learnIdx)
+{
+    using namespace NineHandsMenu;
+    PopupMenu menu;
+    menu.setLookAndFeel (&lnf);
+    auto ccText = [this] (int i)
+    {
+        const int cc = proc.ccMap[i].load();
+        return cc >= 0 ? "CC " + String (cc) : String ("not assigned");
+    };
+    const int lt = proc.learnTarget.load();
+    if (learnIdx >= 0)
+    {
+        // menu d'une commande (tronc commun) : en-tete, MIDI Learn, Clear MIDI, Cancel MIDI learn
+        const int i = learnIdx;
+        const String name = PipelineAudioProcessor::learnDef (i).name;
+        addHeader (menu, lnf.f, (learnIdx < 3 ? icoKnob : (learnIdx < 4 ? icoSwitch : icoPedal)), ledBlue, name, "MIDI: " + ccText (learnIdx));
+        menu.addItem (1000 + learnIdx, "MIDI Learn: " + name, true, lt == learnIdx);
+        menu.addItem (1100 + learnIdx, "Clear MIDI: " + name, proc.ccMap[learnIdx].load() >= 0);
+        menu.addItem (1200, "Cancel MIDI learn", lt >= 0);
+        return menu;
+    }
+
+    // menu de la pedale (tronc commun) : presets, reglages propres, MIDI, Plugin size, Glow intensity
+    addHeader (menu, lnf.f, icoPedal, ledBlue, "Pipeline", "Vibrato  v" + String (JucePlugin_VersionString));
     PopupMenu factory;
     for (int i = 0; i < PipelineAudioProcessor::getNumFactoryPresets(); ++i)
         factory.addItem (100 + i, String (i + 1) + ". " + PipelineAudioProcessor::getFactoryPreset (i).name, true, proc.currentPreset.load() == i);
     menu.addSubMenu ("Factory presets", factory);
     PopupMenu load, save;
     for (int slot = 1; slot <= 9; ++slot)
-    {
+    {{
         const bool exists = proc.hasUserPreset (slot);
         load.addItem (200 + slot, "User " + String (slot) + (exists ? "" : "  (empty)"), exists, proc.currentPreset.load() == 100 + slot);
         save.addItem (300 + slot, "User " + String (slot) + (exists ? "  (overwrite)" : ""));
-    }
+    }}
     menu.addSubMenu ("Load user preset", load);
     menu.addSubMenu ("Save user preset", save);
     menu.addSeparator();
-
     menu.addItem (40, "Tempo sync (RATE = note value)", true, proc.raw ("sync") > 0.5f);
-
-    PopupMenu settings;
-    settings.addItem (44, "Flexi-Switch: hold = momentary", true, proc.raw ("flexi") > 0.5f);
-    settings.addSeparator();
-    settings.addItem (41, "MIDI footswitch: each press toggles on / off (default)", true, proc.raw ("midiFsMode") < 0.5f);
-    settings.addItem (42, "MIDI footswitch latching (127 = on / 0 = off)", true, proc.raw ("midiFsMode") > 0.5f);
-    menu.addSubMenu ("Settings", settings);
+    menu.addSeparator();
 
     PopupMenu midi;
+    midi.addSectionHeader ("MIDI Learn");
     for (int i = 0; i < PipelineAudioProcessor::numLearn; ++i)
-    {
-        const int cc = proc.ccMap[i].load();
-        midi.addItem (1000 + i, "Learn: " + String (PipelineAudioProcessor::learnDef (i).name)
-                                 + " (" + (cc >= 0 ? "CC " + String (cc) : String ("none")) + ")",
-                      true, proc.learnTarget.load() == i);
-    }
+        midi.addItem (1000 + i, "Learn: " + String (PipelineAudioProcessor::learnDef (i).name) + "  (" + ccText (i) + ")", true, lt == i);
     midi.addSeparator();
-    if (proc.learnTarget.load() >= 0) midi.addItem (1200, "Cancel MIDI learn");
+    midi.addItem (1200, "Cancel MIDI learn", lt >= 0);
     midi.addItem (1201, "Clear all MIDI assignments");
     midi.addSeparator();
-    midi.addItem (902, "Mode: 8 zones / Tempo sync: 64+ on", false);
-    midi.addItem (906, "CC n+32 = fine (14-bit) for knobs on CC 0-31", false);
-    midi.addItem (907, "Program Change 1-" + String (PipelineAudioProcessor::getNumFactoryPresets()) + "  Factory presets", false);
-    menu.addSubMenu ("MIDI map", midi);
+    NineHandsWindow::addMidiFootswitchMode (midi, proc.raw ("midiFsMode") > 0.5f);
+    midi.addSeparator();
+    NineHandsWindow::addProgramChangeInfo (midi);
+    menu.addSubMenu ("MIDI", midi);
     menu.addSeparator();
-    menu.addItem (999, "Pipeline vibrato v" + String (JucePlugin_VersionString) + " - NINE HANDS | DSP", false);
 
-    menu.setLookAndFeel (&lnf);
-    menu.showMenuAsync (PopupMenu::Options().withMousePosition(),    // menu clic droit : toujours la ou l'on clique
+    const char* names[numSizes] = { "60 %", "75 %", "100 %" };
+    const int heights[numSizes] = { sizeHeight (0), sizeHeight (1), sizeHeight (2) };
+    menu.addSubMenu ("Plugin size", NineHandsWindow::sizeMenu (JucePlugin_Name, numSizes, names, heights, getHeight()));
+    menu.addSubMenu ("Glow intensity", NineHandsWindow::glowMenu (glowPc));
+    return menu;
+}
+
+void PipelineAudioProcessorEditor::showContextMenu (int learnIdx)
+{
+    auto menu = buildContextMenu (learnIdx);
+    menu.showMenuAsync (PopupMenu::Options().withMousePosition(),       // menu clic droit : toujours la ou l'on clique
         [safe = Component::SafePointer<PipelineAudioProcessorEditor> (this)] (int r)
         {
             if (safe == nullptr || r == 0) return;
             auto& ed = *safe;
             auto& pr = ed.proc;
-            if      (r >= 1 && r <= numSizes) ed.setScaledHeight (sizeHeight (r - 1));
-            else if (r >= 60 && r < 60 + numSizes)
+            int inst = pr.uiSizeIdx.load();
+            const int sz = NineHandsWindow::handleSize (r, JucePlugin_Name, numSizes, inst);
+            if (sz >= 0) { pr.uiSizeIdx = inst; ed.setScaledHeight (sizeHeight (sz)); return; }
+            if (const int pc = NineHandsWindow::handleGlow (r, JucePlugin_Name))
             {
-                WigaWindowSize::setDefaultIndex (JucePlugin_Name, r - 60);   // toutes les nouvelles fenetres de ce plugin
-                ed.setScaledHeight (sizeHeight (r - 60));                    // et cette fenetre tout de suite
+                ed.setGlowPercent (pc);
+                ed.learnLine = "Glow  " + String (pc) + " %";        // ligne d'etat, brievement
+                ed.learnLineUntil = Time::getMillisecondCounterHiRes() + 1500.0;
+                ed.statusUntil = jmax (ed.statusUntil, ed.learnLineUntil);
+                return;
             }
-            else if (r == 40) { pr.setParamValue ("sync", pr.raw ("sync") > 0.5f ? 0.0f : 1.0f); }
-            else if (r == 41) pr.setParamValue ("midiFsMode", 0.0f);
-            else if (r == 42) pr.setParamValue ("midiFsMode", 1.0f);
-            else if (r == 44) pr.setParamValue ("flexi", pr.raw ("flexi") > 0.5f ? 0.0f : 1.0f);
+            if (false) {}
+            else if (r == NineHandsWindow::idLatch)     pr.setParamValue ("midiFsMode", 1.0f);   // Pipeline : 1 = latching
+            else if (r == NineHandsWindow::idMomentary) pr.setParamValue ("midiFsMode", 0.0f);   //            0 = bascule a chaque appui
+            else if (r == 40) pr.setParamValue ("sync", pr.raw ("sync") > 0.5f ? 0.0f : 1.0f);
             else if (r >= 100 && r < 200) pr.applyFactoryPreset (r - 100);
             else if (r > 200 && r < 300)  pr.loadUserPreset (r - 200);
             else if (r > 300 && r < 400)  pr.saveUserPreset (r - 300);
-            else if (r >= 1000) ed.handleMidiMenu (r);
+            else if (r >= 1000) { ed.handleMidiMenu (r); return; }
+            
         });
 }

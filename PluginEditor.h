@@ -4,6 +4,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "Layout.h"
 #include "NineHandsMenu.h"
+#include "NineHandsWindow.h"
 
 //==============================================================================
 // Potard RATE / DEPTH : le corps (et ses reflets) fait partie du fond, seul le repere peint tourne.
@@ -129,8 +130,14 @@ private:
     void useSoftwareRenderer();
     void visibilityChanged() override;
     void askRepaint (juce::Rectangle<int> r);
+public:
+    juce::PopupMenu buildContextMenu (int learnIdx = -1);   // menu clic droit (aussi pour l'outil de controle des menus)
+    void setGlowPercent (int pc);                            // clic droit > Glow intensity
+private:
+    int glowPc = 100;                      // clic droit > Glow intensity : lumiere de la LED sur la facade (25 a 100 %)
+    double lastGlowReadMs = 0.0;
+    float glowAmt() const { return (float) glowPc / 100.0f; }
     void showContextMenu (int learnIdx = -1);
-    void addMidiMenu (juce::PopupMenu& menu, int learnIdx);
     void handleMidiMenu (int r);
     void showPresetMenu();
     void stepPreset (int delta);
@@ -151,6 +158,7 @@ private:
 
     PipelineAudioProcessor& proc;
     PipelineLookAndFeel lnf;
+    NineHandsWindow::HostLock hostLock;    // fenetre du DAW : jamais sous 60 %, jamais au-dela de 150 %
 
     juce::Image background, controls, bgScaled, glowLed, glowLedS, ledOn;
     // serigraphie vectorielle (textes, graduations, filets, cadre), logo et vagues : cuits dans le cache a la resolution physique
