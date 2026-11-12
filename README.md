@@ -11,8 +11,6 @@ Plugin VST3 (Windows x64 et macOS universel) au format pédale simple : **vibrat
   <a href="https://github.com/Nine-Hands-Dsp/pipeline/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/Nine-Hands-Dsp/pipeline?label=derni%C3%A8re%20version&color=1e5a96"></a>
 </p>
 
-![Pipeline](design/preview.png)
-
 ## Installation
 
 Les boutons ci-dessus téléchargent toujours la dernière version.
