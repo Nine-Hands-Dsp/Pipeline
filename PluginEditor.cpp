@@ -1049,7 +1049,7 @@ PopupMenu PipelineAudioProcessorEditor::buildContextMenu (int learnIdx)
     addHeader (menu, lnf.f, icoPedal, ledBlue, "Pipeline", "Vibrato  v" + String (JucePlugin_VersionString));
     PopupMenu factory;
     for (int i = 0; i < PipelineAudioProcessor::getNumFactoryPresets(); ++i)
-        factory.addItem (100 + i, String (i + 1) + ". " + PipelineAudioProcessor::getFactoryPreset (i).name, true, proc.currentPreset.load() == i);
+        NineHandsMenu::addItem (factory, 100 + i, String (i + 1) + ". " + PipelineAudioProcessor::getFactoryPreset (i).name, NineHandsMenu::icoDot, true, proc.currentPreset.load() == i);
     menu.addSubMenu ("Factory presets", factory);
     PopupMenu load, save;
     for (int slot = 1; slot <= 9; ++slot)
@@ -1061,20 +1061,16 @@ PopupMenu PipelineAudioProcessorEditor::buildContextMenu (int learnIdx)
     menu.addSubMenu ("Load user preset", load);
     menu.addSubMenu ("Save user preset", save);
     menu.addSeparator();
-    menu.addItem (40, "Tempo sync (RATE = note value)", true, proc.raw ("sync") > 0.5f);
+    NineHandsMenu::addItem (menu, 40, "Tempo sync", icoDot, true, proc.raw ("sync") > 0.5f);
     menu.addSeparator();
 
     PopupMenu midi;
     midi.addSectionHeader ("MIDI Learn");
     for (int i = 0; i < PipelineAudioProcessor::numLearn; ++i)
-        midi.addItem (1000 + i, "Learn: " + String (PipelineAudioProcessor::learnDef (i).name) + "  (" + ccText (i) + ")", true, lt == i);
+        NineHandsMenu::addItem (midi, 1000 + i, "Learn: " + String (PipelineAudioProcessor::learnDef (i).name) + " (" + ccText (i) + ")", (i == 4) ? NineHandsMenu::icoSwitch : NineHandsMenu::icoMidi, true, lt == i);
     midi.addSeparator();
     midi.addItem (1200, "Cancel MIDI learn", lt >= 0);
     midi.addItem (1201, "Clear all MIDI assignments");
-    midi.addSeparator();
-    NineHandsWindow::addMidiFootswitchMode (midi, proc.raw ("midiFsMode") > 0.5f);
-    midi.addSeparator();
-    NineHandsWindow::addProgramChangeInfo (midi);
     menu.addSubMenu ("MIDI", midi);
     menu.addSeparator();
 

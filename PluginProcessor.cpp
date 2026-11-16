@@ -57,7 +57,7 @@ const PipelineAudioProcessor::LearnDef& PipelineAudioProcessor::learnDef (int i)
         { "depth",  "Depth",      -1, learnContinuous, 0, ccDepth },
         { "mode",   "Mode",       -1, learnSelector,   8, ccMode },         // 0..127 -> 8 positions
         { "sync",   "Tempo Sync", -1, learnToggle,     2, ccSync },         // >= 64 : ON
-        { "active", "Footswitch", -1, learnFootswitch, 0, ccFootswitch },
+        { "active", "Bypass", -1, learnFootswitch, 0, ccFootswitch },
     };
     return defs[jlimit (0, numLearn - 1, i)];
 }
@@ -166,7 +166,7 @@ float PipelineAudioProcessor::mapCC (int k, float raw01)
 
 void PipelineAudioProcessor::handleMidi (MidiBuffer& midi)
 {
-    const bool latching = rawAt (rMidiFs) > 0.5f;    // par defaut (0) : chaque appui bascule marche / arret
+    const bool latching = true;                     // footswitchs MIDI : 127 = on / 0 = off (menu final)    // par defaut (0) : chaque appui bascule marche / arret
     for (const auto meta : midi)
     {
         const auto m = meta.getMessage();
@@ -239,12 +239,6 @@ void PipelineAudioProcessor::handleMidi (MidiBuffer& midi)
             }
             else known = false;
             if (known) { lastMidiCC = cc; ++midiCounter; }
-        }
-        else if (m.isProgramChange())
-        {
-            const int pc = m.getProgramChangeNumber();
-            if (pc < getNumFactoryPresets()) { pendingPreset = pc; triggerAsyncUpdate(); }
-            lastMidiCC = -2; ++midiCounter;
         }
     }
     midi.clear();
