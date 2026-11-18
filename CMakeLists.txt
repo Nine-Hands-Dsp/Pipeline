@@ -41,7 +41,7 @@ juce_add_plugin(Pipeline
   FORMATS VST3
   VST3_CATEGORIES Fx Modulation
   PRODUCT_NAME "Pipeline"
-  VERSION 1.7.0
+  VERSION ${PROJECT_VERSION}
   DESCRIPTION "8-mode pitch vibrato (Aqueduct style) - single pedal format"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT TRUE
